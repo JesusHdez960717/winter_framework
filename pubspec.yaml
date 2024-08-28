@@ -11,6 +11,8 @@ dependencies:
   shelf: ^1.4.0
   shelf_router: ^1.1.0
 
+  #para el parseo a snack case
+  change_case: ^2.1.0
 dev_dependencies:
   http: ^1.1.0
   lints: ^4.0.0
