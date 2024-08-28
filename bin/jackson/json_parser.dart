@@ -16,38 +16,77 @@ class JsonProperty {
 
 //-------------------------- naming --------------------------\\
 //-------------------------- parser --------------------------\\
-typedef FromJsonParserFunction<T, U> = T Function(U property);
-typedef ToJsonParserFunction<T, U> = T Function(U property);
+typedef FromJsonParserFunction = dynamic Function(dynamic property);
+typedef ToJsonParserFunction = dynamic Function(dynamic property);
 
-class PropertyParser<T, U> {
-  final FromJsonParserFunction<T, U> fromJsonParser;
-  final ToJsonParserFunction<U, T> toJsonParser;
+class PropertyParser {
+  final FromJsonParserFunction fromJsonParser;
+  final ToJsonParserFunction toJsonParser;
 
   const PropertyParser(this.fromJsonParser, this.toJsonParser);
 }
 
-class FromJsonParser<T, U> {
-  final FromJsonParserFunction<T, U> parser;
+class FromJsonParser {
+  final FromJsonParserFunction parser;
 
   const FromJsonParser(this.parser);
 }
 
-class ToJsonParser<T, U> {
-  final ToJsonParserFunction<T, U> parser;
+class ToJsonParser {
+  final ToJsonParserFunction parser;
 
   const ToJsonParser(this.parser);
 }
 
-//-------------------------- parser --------------------------\\
 class JsonParser {
   late final NamingStrategy namingStrategy;
+  Map<Type, ToJsonParserFunction> defaultToJsonParser = {
+    DateTime: (dynamic object) => (object as DateTime).toIso8601String(),
+    Duration: (dynamic object) => (object as Duration).inMilliseconds,
+    Uri: (dynamic object) => (object as Uri).toString(),
+    RegExp: (dynamic object) => (object as RegExp).pattern,
+    String: (dynamic object) => (object as String),
+    num: (dynamic object) => (object as num),
+    int: (dynamic object) => (object as int),
+    double: (dynamic object) => (object as double),
+    bool: (dynamic object) => (object as bool),
+  };
 
-  JsonParser({NamingStrategy? namingStrategy}) {
+  JsonParser({
+    NamingStrategy? namingStrategy,
+    Map<Type, ToJsonParserFunction>? defaultToJsonParser,
+  }) {
     this.namingStrategy = namingStrategy ?? NamingStrategies.basic;
+
+    this.defaultToJsonParser.addAll(defaultToJsonParser ?? {});
   }
 
-  String serialize(Object object) {
-    return jsonEncode(_toMap(object, {}));
+  String serialize(Object object, {bool cleanUp = false}) {
+    dynamic parsedObject = _toMap(object, {});
+
+    if (parsedObject is String) {
+      return parsedObject;
+    }
+
+    dynamic cleanedUpObject = parsedObject;
+
+    if (cleanUp) {
+      cleanedUpObject = cleanUpObject(parsedObject);
+    }
+
+    return jsonEncode(cleanedUpObject);
+  }
+
+  dynamic cleanUpObject(dynamic parsedObject) {
+    if (parsedObject is List) {
+      return parsedObject.map((e) => cleanUpObject(e)).toList();
+    } else if (parsedObject is Map) {
+      return parsedObject.map((key, value) {
+        return MapEntry(key.toString(), cleanUpObject(value));
+      });
+    } else {
+      return parsedObject.toString();
+    }
   }
 
   Object _toMap(Object object, Set<Object> seen) {
@@ -58,19 +97,10 @@ class JsonParser {
     if (object is List) {
       return object.map((e) => _toMap(e, seen)).toList();
     } else if (object is Map) {
-      return object.map((key, val) => MapEntry(key, _toMap(val, seen)));
-    } else if (object is String || object is num || object is bool) {
-      return object;
-    } else if (object is DateTime) {
-      //--------------------- middle
-      return object.toIso8601String();
-    } else if (object is Duration) {
-      return object.inMilliseconds;
-    } else if (object is Uri) {
-      return object.toString();
-    } else if (object is RegExp) {
-      return object.pattern;
-      //--------------------------
+      return object
+          .map((key, val) => MapEntry(_toMap(key, seen), _toMap(val, seen)));
+    } else if (defaultToJsonParser.containsKey(object.runtimeType)) {
+      return defaultToJsonParser[object.runtimeType]!(object);
     } else {
       seen.add(object);
 
@@ -80,25 +110,23 @@ class JsonParser {
       var objectMirror = reflect(object);
       var classMirror = objectMirror.type;
 
-      ToJsonParser? classParser = classMirror.metadata
-          .firstWhereOrNull((element) => element.reflectee is ToJsonParser)
-          ?.reflectee as ToJsonParser?;
-      if (classParser != null) {
-        return classParser.parser(object);
+      ToJsonParserFunction? classParserFunction =
+          _getToJsonParser(classMirror.metadata);
+      if (classParserFunction != null) {
+        return classParserFunction(object);
       }
 
-      //si la clase no tiene el parser, hago el parse mio, recorro todos los campos y los parseo-
+      //si la clase no tiene el parser, hago el default, recorro todos los campos y los parseo-
       for (var declaration in classMirror.declarations.values) {
         if (declaration is VariableMirror && !declaration.isStatic) {
           var fieldName = _getFieldName(declaration);
           var fieldValue =
               objectMirror.getField(declaration.simpleName).reflectee;
 
-          ToJsonParser? fieldParser = declaration.metadata
-              .firstWhereOrNull((element) => element.reflectee is ToJsonParser)
-              ?.reflectee as ToJsonParser?;
-          if (fieldParser != null) {
-            result[fieldName] = (fieldParser.parser as ToJsonParserFunction<int, int>)(fieldValue);
+          ToJsonParserFunction? classParserFunction =
+              _getToJsonParser(declaration.metadata);
+          if (classParserFunction != null) {
+            result[fieldName] = classParserFunction(fieldValue);
           } else {
             result[fieldName] = _toMap(fieldValue, seen);
           }
@@ -119,5 +147,22 @@ class JsonParser {
 
     String rawFieldName = MirrorSystem.getName(field.simpleName);
     return namingStrategy(rawFieldName);
+  }
+
+  ToJsonParserFunction? _getToJsonParser(List<InstanceMirror> metadata) {
+    PropertyParser? propertyParserLv1 = metadata
+        .firstWhereOrNull((element) => element.reflectee is PropertyParser)
+        ?.reflectee as PropertyParser?;
+    if (propertyParserLv1 != null) {
+      return propertyParserLv1.toJsonParser;
+    }
+
+    ToJsonParser? propertyParserLv2 = metadata
+        .firstWhereOrNull((element) => element.reflectee is ToJsonParser)
+        ?.reflectee as ToJsonParser?;
+    if (propertyParserLv2 != null) {
+      return propertyParserLv2.parser;
+    }
+    return null;
   }
 }

@@ -3,7 +3,7 @@ import 'naming_strategies.dart';
 
 void main() async {
   // Crear algunas direcciones
-  Address address1 = Address('Main Street', 123);
+  /*Address address1 = Address('Main Street', 123);
   Address address2 = Address('Second Street', 456);
   Address singleAddress = Address('Single', 111);
 
@@ -29,7 +29,7 @@ void main() async {
   // Serializar el objeto User a JSON
   String jsonString = parser.serialize(user);
 
-  print(jsonString);
+  print(jsonString);*/
 
   /*List<int> l = [
     1,2
@@ -37,6 +37,20 @@ void main() async {
   JsonParser parser = JsonParser(namingStrategy: NamingStrategies.snakeCase);
   String jsonString = parser.serialize(l);
   print(jsonString);*/
+
+  Map<dynamic, int> l = {
+    Address('Main Street', 123): 1,
+    Address('Second Street', 456): 2,
+  };
+  JsonParser parser = JsonParser(
+    namingStrategy: NamingStrategies.snakeCase,
+    defaultToJsonParser: {
+      int: (dynamic object) => (object as int) * 5,
+    },
+  );
+
+  String jsonString = parser.serialize(l, cleanUp: true);
+  print(jsonString);
 }
 
 class Address {
@@ -46,15 +60,18 @@ class Address {
   Address(this.streetName, this.houseNumber);
 }
 
-int toJson(int prop) => prop * 1000;
+dynamic toJsonL1(dynamic prop) => prop * 1000;
+
+dynamic toJsonDuration(dynamic object) => (object as Duration).inHours;
 
 class User {
   @JsonProperty('user-----name')
   String userName;
 
-  @ToJsonParser<int, int>(toJson)
-  //@PropertyParser(fromJson, toJson)
+  @ToJsonParser(toJsonL1)
   int userId;
+
+  Duration duration;
 
   bool isActive;
   List<Address> addresses;
@@ -67,6 +84,7 @@ class User {
     this.isActive,
     this.addresses,
     this.singleAddress,
-    this.additionalAttributes,
-  );
+    this.additionalAttributes, {
+    this.duration = const Duration(days: 2),
+  });
 }
