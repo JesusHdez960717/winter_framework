@@ -25,6 +25,9 @@ typedef ToJsonParserFunction = dynamic Function(dynamic property);
 ///Definicion de funcion para hacer el casteo de: List<dynamic> a List<T>
 typedef ListParserFunction<T> = List<T> Function(List property);
 
+///Definicion de funcion para hacer el casteo de: Map<dynamic> a Map<T>
+typedef MapParserFunction<K, V> = Map<K, V> Function(Map property);
+
 ///Annotation con ambas funciones from-json y to-json
 class PropertyParser {
   final FromJsonParserFunction fromJsonParser;
@@ -56,6 +59,16 @@ class CastList<T> {
 
 ///funcion por defecto para hacer el parser de una List<dynamic> a List<T>
 List<T> listCaster<T>(List list) => list.cast<T>();
+
+///Annotation para obtener el tipo T de un map y hacerle el parser
+class CastMap<K, V> {
+  final MapParserFunction<K, V> parser;
+
+  const CastMap() : parser = mapCaster;
+}
+
+///funcion por defecto para hacer el parser de una List<dynamic> a List<T>
+Map<K, V> mapCaster<K, V>(Map map) => map.cast<K, V>();
 //-------------------------- parser --------------------------\\
 
 class JsonParser {
@@ -213,6 +226,14 @@ class JsonParser {
       return defaultFromJsonParser[targetType]!(json);
     } else {
       var classMirror = reflectClass(targetType);
+      /*var instanceMirrorTest = classMirror.newInstance(Symbol('fromJson'), [
+        "",
+        1,
+        Duration(),
+        true,
+        <Address>[],
+        Address.named(streetName: "123", houseNumber: 123),
+      ]);*/
       var instanceMirror = classMirror.newInstance(Symbol(''), []);
 
       for (var declaration in classMirror.declarations.values) {
@@ -254,7 +275,31 @@ class JsonParser {
                     'Cant parse List without know it\'s type at runtime. Try add `@CastList<$listParam>()` on `List<$listParam> $rawFieldName;`');
               }
             } else if (fieldValue is Map) {
-              print('map');
+              CastMap? castMapAnnotation = declaration.metadata
+                  .firstWhereOrNull((element) => element.reflectee is CastMap)
+                  ?.reflectee as CastMap?;
+
+              if (castMapAnnotation != null) {
+                instanceMirror.setField(declaration.simpleName,
+                    castMapAnnotation.parser(fieldValue));
+                continue;
+              } else {
+                TypeMirror fieldFirstTypeMirror =
+                    (declaration.type as ClassMirror).typeArguments.first;
+                String firstMapParam =
+                    fieldFirstTypeMirror.reflectedType.toString();
+
+                TypeMirror fieldSecondTypeMirror =
+                    (declaration.type as ClassMirror).typeArguments[1];
+                String secondMapParam =
+                    fieldSecondTypeMirror.reflectedType.toString();
+
+                String rawFieldName =
+                    MirrorSystem.getName(declaration.simpleName);
+
+                throw StateError(
+                    'Cant parse Map without know it\'s type at runtime. Try add `@CastMap<$firstMapParam, $secondMapParam>()` on `Map<$firstMapParam, $secondMapParam> $rawFieldName;`');
+              }
             }
 
             instanceMirror.setField(declaration.simpleName, fieldValue);

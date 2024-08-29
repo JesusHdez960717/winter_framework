@@ -75,6 +75,8 @@ class User {
   List<Address>? addresses;
 
   Address? singleAddress;
+
+  @CastMap<String, dynamic>()
   Map<String, dynamic>? additionalAttributes;
 
   User();
@@ -88,16 +90,6 @@ class User {
     required this.singleAddress,
     required this.additionalAttributes,
   });
-
-  User.fromJson(
-    this.userName,
-    this.userId,
-    this.duration,
-    this.isActive,
-    this.addresses,
-    this.singleAddress,
-    this.additionalAttributes,
-  );
 
   @override
   String toString() {
