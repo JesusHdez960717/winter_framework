@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:mirrors';
+import 'jackson_main.dart';
 
 import 'package:collection/collection.dart'; // needed firstWhereOrNull. You have to add this manually, for some reason it cannot be added automatically
 
@@ -52,16 +53,35 @@ class JsonParser {
     bool: (dynamic object) => (object as bool),
   };
 
+  Map<Type, FromJsonParserFunction> defaultFromJsonParser = {
+    DateTime: (dynamic value) => DateTime.parse(value),
+    Duration: (dynamic value) => Duration(milliseconds: value),
+    Uri: (dynamic value) => Uri.parse(value),
+    RegExp: (dynamic value) => RegExp(value),
+    String: (dynamic value) => value as String,
+    num: (dynamic value) => value as num,
+    int: (dynamic value) => value as int,
+    double: (dynamic value) => value as double,
+    bool: (dynamic value) => value as bool,
+  };
+
   JsonParser({
     NamingStrategy? namingStrategy,
     Map<Type, ToJsonParserFunction>? defaultToJsonParser,
+    Map<Type, FromJsonParserFunction>? defaultFromJsonParser,
   }) {
     this.namingStrategy = namingStrategy ?? NamingStrategies.basic;
 
-    this.defaultToJsonParser.addAll(defaultToJsonParser ?? {});
+    if (defaultToJsonParser != null) {
+      this.defaultToJsonParser.addAll(defaultToJsonParser);
+    }
+
+    if (defaultFromJsonParser != null) {
+      this.defaultFromJsonParser.addAll(defaultFromJsonParser);
+    }
   }
 
-  String serialize(Object object, {bool cleanUp = false}) {
+  String serialize(dynamic object, {bool cleanUp = false}) {
     dynamic parsedObject = _toMap(object, {});
 
     if (parsedObject is String) {
@@ -89,7 +109,7 @@ class JsonParser {
     }
   }
 
-  Object _toMap(Object object, Set<Object> seen) {
+  dynamic _toMap(dynamic object, Set<dynamic> seen) {
     if (seen.contains(object)) {
       throw StateError('Circular reference detected');
     }
@@ -104,7 +124,7 @@ class JsonParser {
     } else {
       seen.add(object);
 
-      ///its a normal object/class, use mirror to parse its internal fields
+      /// It's a normal object/class, use mirror to parse its internal fields
       var result = <String, dynamic>{};
 
       var objectMirror = reflect(object);
@@ -116,7 +136,7 @@ class JsonParser {
         return classParserFunction(object);
       }
 
-      //si la clase no tiene el parser, hago el default, recorro todos los campos y los parseo-
+      // If the class doesn't have a parser, do the default, iterate through all fields and parse them
       for (var declaration in classMirror.declarations.values) {
         if (declaration is VariableMirror && !declaration.isStatic) {
           var fieldName = _getFieldName(declaration);
@@ -136,19 +156,6 @@ class JsonParser {
     }
   }
 
-  String _getFieldName(DeclarationMirror field) {
-    JsonProperty? jsonPropAnnotation = field.metadata
-        .firstWhereOrNull((element) => element.reflectee is JsonProperty)
-        ?.reflectee as JsonProperty?;
-
-    if (jsonPropAnnotation != null) {
-      return jsonPropAnnotation.name;
-    }
-
-    String rawFieldName = MirrorSystem.getName(field.simpleName);
-    return namingStrategy(rawFieldName);
-  }
-
   ToJsonParserFunction? _getToJsonParser(List<InstanceMirror> metadata) {
     PropertyParser? propertyParserLv1 = metadata
         .firstWhereOrNull((element) => element.reflectee is PropertyParser)
@@ -164,5 +171,100 @@ class JsonParser {
       return propertyParserLv2.parser;
     }
     return null;
+  }
+
+  // -------------------------- DESERIALIZE FUNCTION -------------------------- \\
+  T deserialize<T>(String jsonString) {
+    dynamic jsonObject = jsonDecode(jsonString);
+    return _fromMap<T>(jsonObject, T);
+  }
+
+  T _fromMap<T>(dynamic map, Type targetType) {
+    if (map == null) return null as T;
+
+    if (map is List) {
+      ClassMirror classMirror = reflectType(targetType) as ClassMirror;
+      TypeMirror paramTypeMirror = classMirror.typeArguments.first;
+      Type subType = paramTypeMirror.reflectedType;
+
+      return map.map((item) => _fromMap(item, subType)).toList() as T;
+    } else if (defaultFromJsonParser.containsKey(targetType)) {
+      return defaultFromJsonParser[targetType]!(map) as T;
+    } else {
+      var classMirror = reflectClass(targetType);
+      var instanceMirror = classMirror.newInstance(Symbol(''), []);
+
+      for (var declaration in classMirror.declarations.values) {
+        if (declaration is VariableMirror && !declaration.isStatic) {
+          String fieldName = _getFieldName(declaration);
+
+          if (map[fieldName] != null) {
+            FromJsonParserFunction? parserFunction =
+                _getFromJsonParser(declaration.metadata);
+
+            var fieldValue = map[fieldName];
+
+            if (parserFunction != null) {
+              fieldValue = parserFunction(fieldValue);
+            } else {
+              fieldValue = _fromMap(fieldValue, declaration.type.reflectedType);
+            }
+
+            /*if (fieldName == "addresses") {
+              instanceMirror.setField(declaration.simpleName, (fieldValue as List).cast<Address>());
+            }else{
+              instanceMirror.setField(declaration.simpleName, fieldValue);
+            }*/
+
+            // Aquí es donde se asegura la conversión a List<Address> si es necesario
+            if (declaration.type.isSubtypeOf(reflectType(List))) {
+              ListAnnotation? annotation = declaration.metadata
+                  .firstWhereOrNull((element) => element.reflectee is ListAnnotation)
+                  ?.reflectee as ListAnnotation?;
+
+              instanceMirror.setField(declaration.simpleName, annotation!.parser(fieldValue));
+              print('oka');
+
+              continue;
+            }
+
+            instanceMirror.setField(declaration.simpleName, fieldValue);
+          }
+        }
+      }
+
+      return instanceMirror.reflectee as T;
+    }
+  }
+
+  FromJsonParserFunction? _getFromJsonParser(List<InstanceMirror> metadata) {
+    PropertyParser? propertyParserLv1 = metadata
+        .firstWhereOrNull((element) => element.reflectee is PropertyParser)
+        ?.reflectee as PropertyParser?;
+    if (propertyParserLv1 != null) {
+      return propertyParserLv1.fromJsonParser;
+    }
+
+    FromJsonParser? propertyParserLv2 = metadata
+        .firstWhereOrNull((element) => element.reflectee is FromJsonParser)
+        ?.reflectee as FromJsonParser?;
+    if (propertyParserLv2 != null) {
+      return propertyParserLv2.parser;
+    }
+    return null;
+  }
+
+  //--------------------------
+  String _getFieldName(DeclarationMirror field) {
+    JsonProperty? jsonPropAnnotation = field.metadata
+        .firstWhereOrNull((element) => element.reflectee is JsonProperty)
+        ?.reflectee as JsonProperty?;
+
+    if (jsonPropAnnotation != null) {
+      return jsonPropAnnotation.name;
+    }
+
+    String rawFieldName = MirrorSystem.getName(field.simpleName);
+    return namingStrategy(rawFieldName);
   }
 }

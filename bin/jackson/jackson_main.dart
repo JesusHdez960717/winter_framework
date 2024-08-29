@@ -3,9 +3,10 @@ import 'naming_strategies.dart';
 
 void main() async {
   // Crear algunas direcciones
-  /*Address address1 = Address('Main Street', 123);
-  Address address2 = Address('Second Street', 456);
-  Address singleAddress = Address('Single', 111);
+  Address address1 = Address.named(streetName: 'Main Street', houseNumber: 123);
+  Address address2 =
+      Address.named(streetName: 'Second Street', houseNumber: 456);
+  Address singleAddress = Address.named(streetName: 'Single', houseNumber: 111);
 
   // Crear un mapa de atributos adicionales
   Map<String, dynamic> additionalAttributes = {
@@ -14,13 +15,14 @@ void main() async {
   };
 
   // Crear una instancia de User con una lista de direcciones y un mapa de atributos adicionales
-  User user = User(
-    'JohnDoe',
-    42,
-    true,
-    [address1, address2],
-    singleAddress,
-    additionalAttributes,
+  User user = User.named(
+    userName: 'JohnDoe',
+    userId: 42,
+    isActive: true,
+    addresses: [address1, address2],
+    duration: Duration(days: 2),
+    singleAddress: singleAddress,
+    additionalAttributes: additionalAttributes,
   );
 
   // Crear una instancia de JsonParser
@@ -29,62 +31,67 @@ void main() async {
   // Serializar el objeto User a JSON
   String jsonString = parser.serialize(user);
 
-  print(jsonString);*/
-
-  /*List<int> l = [
-    1,2
-  ];
-  JsonParser parser = JsonParser(namingStrategy: NamingStrategies.snakeCase);
-  String jsonString = parser.serialize(l);
-  print(jsonString);*/
-
-  Map<dynamic, int> l = {
-    Address('Main Street', 123): 1,
-    Address('Second Street', 456): 2,
-  };
-  JsonParser parser = JsonParser(
-    namingStrategy: NamingStrategies.snakeCase,
-    defaultToJsonParser: {
-      int: (dynamic object) => (object as int) * 5,
-    },
-  );
-
-  String jsonString = parser.serialize(l, cleanUp: true);
   print(jsonString);
+
+  User userBack = parser.deserialize(jsonString);
+  print(userBack.toString());
 }
 
 class Address {
-  String streetName;
-  int houseNumber;
+  String? streetName;
+  int? houseNumber;
 
-  Address(this.streetName, this.houseNumber);
+  Address();
+
+  Address.named({
+    this.streetName,
+    this.houseNumber,
+  });
 }
 
 dynamic toJsonL1(dynamic prop) => prop * 1000;
 
 dynamic toJsonDuration(dynamic object) => (object as Duration).inHours;
 
+typedef ListParserFunction = List Function(List property);
+
+class ListAnnotation {
+  final ListParserFunction parser;
+
+  const ListAnnotation(this.parser);
+}
+
+List parse(List list) => list.cast<Address>();
+
 class User {
-  @JsonProperty('user-----name')
-  String userName;
+  String? userName;
 
-  @ToJsonParser(toJsonL1)
-  int userId;
+  int? userId;
 
-  Duration duration;
+  Duration? duration;
 
-  bool isActive;
-  List<Address> addresses;
-  Address singleAddress;
-  Map<String, dynamic> additionalAttributes;
+  bool? isActive;
 
-  User(
-    this.userName,
-    this.userId,
-    this.isActive,
-    this.addresses,
-    this.singleAddress,
-    this.additionalAttributes, {
-    this.duration = const Duration(days: 2),
+  @ListAnnotation(parse)
+  List<Address>? addresses;
+
+  Address? singleAddress;
+  Map<String, dynamic>? additionalAttributes;
+
+  User();
+
+  User.named({
+    required this.userName,
+    required this.userId,
+    required this.duration,
+    required this.isActive,
+    required this.addresses,
+    required this.singleAddress,
+    required this.additionalAttributes,
   });
+
+  @override
+  String toString() {
+    return 'User{userName: $userName, userId: $userId, duration: $duration, isActive: $isActive, addresses: $addresses, singleAddress: $singleAddress, additionalAttributes: $additionalAttributes}';
+  }
 }
