@@ -33,8 +33,17 @@ void main() async {
 
   print(jsonString);
 
-  User userBack = parser.deserialize(jsonString);
+  User userBack = parser.deserialize(jsonString, User);
   print(userBack.toString());
+
+  /*JsonParser parser = JsonParser(namingStrategy: NamingStrategies.snakeCase);
+
+  List<int> list = [1, 2, 3];
+  String jsonString = parser.serialize(list);
+  print(jsonString);
+
+  List<int> list2 = parser.deserialize(jsonString, List<int>).cast<int>();
+  print(list2.toString());*/
 }
 
 class Address {
@@ -53,16 +62,6 @@ dynamic toJsonL1(dynamic prop) => prop * 1000;
 
 dynamic toJsonDuration(dynamic object) => (object as Duration).inHours;
 
-typedef ListParserFunction = List Function(List property);
-
-class ListAnnotation {
-  final ListParserFunction parser;
-
-  const ListAnnotation(this.parser);
-}
-
-List parse(List list) => list.cast<Address>();
-
 class User {
   String? userName;
 
@@ -72,7 +71,7 @@ class User {
 
   bool? isActive;
 
-  @ListAnnotation(parse)
+  @CastList<Address>()
   List<Address>? addresses;
 
   Address? singleAddress;
@@ -89,6 +88,16 @@ class User {
     required this.singleAddress,
     required this.additionalAttributes,
   });
+
+  User.fromJson(
+    this.userName,
+    this.userId,
+    this.duration,
+    this.isActive,
+    this.addresses,
+    this.singleAddress,
+    this.additionalAttributes,
+  );
 
   @override
   String toString() {

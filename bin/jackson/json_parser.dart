@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:mirrors';
-import 'jackson_main.dart';
 
 import 'package:collection/collection.dart'; // needed firstWhereOrNull. You have to add this manually, for some reason it cannot be added automatically
 
@@ -17,9 +16,16 @@ class JsonProperty {
 
 //-------------------------- naming --------------------------\\
 //-------------------------- parser --------------------------\\
+///Definicion de funcion para hacer el parseo de un json a un objeto
 typedef FromJsonParserFunction = dynamic Function(dynamic property);
+
+///Definicion de funcion para hacer el parseo de un objeto a un json
 typedef ToJsonParserFunction = dynamic Function(dynamic property);
 
+///Definicion de funcion para hacer el casteo de: List<dynamic> a List<T>
+typedef ListParserFunction<T> = List<T> Function(List property);
+
+///Annotation con ambas funciones from-json y to-json
 class PropertyParser {
   final FromJsonParserFunction fromJsonParser;
   final ToJsonParserFunction toJsonParser;
@@ -27,17 +33,30 @@ class PropertyParser {
   const PropertyParser(this.fromJsonParser, this.toJsonParser);
 }
 
+///Annotation para personalizar el parsea a un objeto a un json
 class FromJsonParser {
   final FromJsonParserFunction parser;
 
   const FromJsonParser(this.parser);
 }
 
+///Annotation para personalizar el parsea a un json de un objeto
 class ToJsonParser {
   final ToJsonParserFunction parser;
 
   const ToJsonParser(this.parser);
 }
+
+///Annotation para obtener el tipo T de una lista y hacerle el parser
+class CastList<T> {
+  final ListParserFunction<T> parser;
+
+  const CastList() : parser = listCaster;
+}
+
+///funcion por defecto para hacer el parser de una List<dynamic> a List<T>
+List<T> listCaster<T>(List list) => list.cast<T>();
+//-------------------------- parser --------------------------\\
 
 class JsonParser {
   late final NamingStrategy namingStrategy;
@@ -174,22 +193,24 @@ class JsonParser {
   }
 
   // -------------------------- DESERIALIZE FUNCTION -------------------------- \\
-  T deserialize<T>(String jsonString) {
+  dynamic deserialize(String jsonString, Type targetType) {
     dynamic jsonObject = jsonDecode(jsonString);
-    return _fromMap<T>(jsonObject, T);
+    return _fromMap(jsonObject, targetType);
   }
 
-  T _fromMap<T>(dynamic map, Type targetType) {
-    if (map == null) return null as T;
+  dynamic _fromMap(dynamic json, Type targetType) {
+    if (json == null) return null;
 
-    if (map is List) {
-      ClassMirror classMirror = reflectType(targetType) as ClassMirror;
-      TypeMirror paramTypeMirror = classMirror.typeArguments.first;
-      Type subType = paramTypeMirror.reflectedType;
+    if (json is List) {
+      ClassMirror classMirror =
+          reflectType(targetType) as ClassMirror; //class mirror on 'list'
+      TypeMirror paramTypeMirror =
+          classMirror.typeArguments.first; //class mirror in T (siendo List<T>)
+      Type subType = paramTypeMirror.reflectedType; //T
 
-      return map.map((item) => _fromMap(item, subType)).toList() as T;
+      return json.map((item) => _fromMap(item, subType)).toList();
     } else if (defaultFromJsonParser.containsKey(targetType)) {
-      return defaultFromJsonParser[targetType]!(map) as T;
+      return defaultFromJsonParser[targetType]!(json);
     } else {
       var classMirror = reflectClass(targetType);
       var instanceMirror = classMirror.newInstance(Symbol(''), []);
@@ -198,34 +219,42 @@ class JsonParser {
         if (declaration is VariableMirror && !declaration.isStatic) {
           String fieldName = _getFieldName(declaration);
 
-          if (map[fieldName] != null) {
+          if (json[fieldName] != null) {
             FromJsonParserFunction? parserFunction =
                 _getFromJsonParser(declaration.metadata);
 
-            var fieldValue = map[fieldName];
+            var fieldValue = json[fieldName];
 
             if (parserFunction != null) {
               fieldValue = parserFunction(fieldValue);
             } else {
+              if (fieldValue is Map) {
+                print('map 1');
+              } else {}
               fieldValue = _fromMap(fieldValue, declaration.type.reflectedType);
             }
 
-            /*if (fieldName == "addresses") {
-              instanceMirror.setField(declaration.simpleName, (fieldValue as List).cast<Address>());
-            }else{
-              instanceMirror.setField(declaration.simpleName, fieldValue);
-            }*/
+            if (fieldValue is List) {
+              CastList? castListAnnotation = declaration.metadata
+                  .firstWhereOrNull((element) => element.reflectee is CastList)
+                  ?.reflectee as CastList?;
 
-            // Aquí es donde se asegura la conversión a List<Address> si es necesario
-            if (declaration.type.isSubtypeOf(reflectType(List))) {
-              ListAnnotation? annotation = declaration.metadata
-                  .firstWhereOrNull((element) => element.reflectee is ListAnnotation)
-                  ?.reflectee as ListAnnotation?;
+              if (castListAnnotation != null) {
+                instanceMirror.setField(declaration.simpleName,
+                    castListAnnotation.parser(fieldValue));
+                continue;
+              } else {
+                TypeMirror fieldTypeMirror =
+                    (declaration.type as ClassMirror).typeArguments.first;
+                String listParam = fieldTypeMirror.reflectedType.toString();
+                String rawFieldName =
+                    MirrorSystem.getName(declaration.simpleName);
 
-              instanceMirror.setField(declaration.simpleName, annotation!.parser(fieldValue));
-              print('oka');
-
-              continue;
+                throw StateError(
+                    'Cant parse List without know it\'s type at runtime. Try add `@CastList<$listParam>()` on `List<$listParam> $rawFieldName;`');
+              }
+            } else if (fieldValue is Map) {
+              print('map');
             }
 
             instanceMirror.setField(declaration.simpleName, fieldValue);
@@ -233,7 +262,7 @@ class JsonParser {
         }
       }
 
-      return instanceMirror.reflectee as T;
+      return instanceMirror.reflectee;
     }
   }
 
