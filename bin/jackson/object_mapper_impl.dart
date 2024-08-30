@@ -3,116 +3,16 @@ import 'dart:mirrors';
 
 import 'package:collection/collection.dart'; // needed firstWhereOrNull. You have to add this manually, for some reason it cannot be added automatically
 
-import 'naming_strategies.dart';
+import '../winter/core/object_mapper.dart';
 
-//-------------------------- naming --------------------------\\
-typedef NamingStrategy = String Function(String value);
+class ObjectMapperImpl extends ObjectMapper {
+  ObjectMapperImpl({
+    super.namingStrategy,
+    super.defaultToJsonParser,
+    super.defaultFromJsonParser,
+  });
 
-class JsonProperty {
-  final String name;
-
-  const JsonProperty(this.name);
-}
-
-//-------------------------- naming --------------------------\\
-//-------------------------- parser --------------------------\\
-///Definicion de funcion para hacer el parseo de un json a un objeto
-typedef FromJsonParserFunction = dynamic Function(dynamic property);
-
-///Definicion de funcion para hacer el parseo de un objeto a un json
-typedef ToJsonParserFunction = dynamic Function(dynamic property);
-
-///Definicion de funcion para hacer el casteo de: List<dynamic> a List<T>
-typedef ListParserFunction<T> = List<T> Function(List property);
-
-///Definicion de funcion para hacer el casteo de: Map<dynamic> a Map<T>
-typedef MapParserFunction<K, V> = Map<K, V> Function(Map property);
-
-///Annotation con ambas funciones from-json y to-json
-class PropertyParser {
-  final FromJsonParserFunction fromJsonParser;
-  final ToJsonParserFunction toJsonParser;
-
-  const PropertyParser(this.fromJsonParser, this.toJsonParser);
-}
-
-///Annotation para personalizar el parsea a un objeto a un json
-class FromJsonParser {
-  final FromJsonParserFunction parser;
-
-  const FromJsonParser(this.parser);
-}
-
-///Annotation para personalizar el parsea a un json de un objeto
-class ToJsonParser {
-  final ToJsonParserFunction parser;
-
-  const ToJsonParser(this.parser);
-}
-
-///Annotation para obtener el tipo T de una lista y hacerle el parser
-class CastList<T> {
-  final ListParserFunction<T> parser;
-
-  const CastList() : parser = listCaster;
-}
-
-///funcion por defecto para hacer el parser de una List<dynamic> a List<T>
-List<T> listCaster<T>(List list) => list.cast<T>();
-
-///Annotation para obtener el tipo T de un map y hacerle el parser
-class CastMap<K, V> {
-  final MapParserFunction<K, V> parser;
-
-  const CastMap() : parser = mapCaster;
-}
-
-///funcion por defecto para hacer el parser de una List<dynamic> a List<T>
-Map<K, V> mapCaster<K, V>(Map map) => map.cast<K, V>();
-//-------------------------- parser --------------------------\\
-
-class JsonParser {
-  late final NamingStrategy namingStrategy;
-  Map<Type, ToJsonParserFunction> defaultToJsonParser = {
-    DateTime: (dynamic object) => (object as DateTime).toIso8601String(),
-    Duration: (dynamic object) => (object as Duration).inMilliseconds,
-    Uri: (dynamic object) => (object as Uri).toString(),
-    RegExp: (dynamic object) => (object as RegExp).pattern,
-    String: (dynamic object) => (object as String),
-    num: (dynamic object) => (object as num),
-    int: (dynamic object) => (object as int),
-    double: (dynamic object) => (object as double),
-    bool: (dynamic object) => (object as bool),
-  };
-
-  Map<Type, FromJsonParserFunction> defaultFromJsonParser = {
-    DateTime: (dynamic value) => DateTime.parse(value),
-    Duration: (dynamic value) => Duration(milliseconds: value),
-    Uri: (dynamic value) => Uri.parse(value),
-    RegExp: (dynamic value) => RegExp(value),
-    String: (dynamic value) => value as String,
-    num: (dynamic value) => value as num,
-    int: (dynamic value) => value as int,
-    double: (dynamic value) => value as double,
-    bool: (dynamic value) => value as bool,
-  };
-
-  JsonParser({
-    NamingStrategy? namingStrategy,
-    Map<Type, ToJsonParserFunction>? defaultToJsonParser,
-    Map<Type, FromJsonParserFunction>? defaultFromJsonParser,
-  }) {
-    this.namingStrategy = namingStrategy ?? NamingStrategies.basic;
-
-    if (defaultToJsonParser != null) {
-      this.defaultToJsonParser.addAll(defaultToJsonParser);
-    }
-
-    if (defaultFromJsonParser != null) {
-      this.defaultFromJsonParser.addAll(defaultFromJsonParser);
-    }
-  }
-
+  @override
   String serialize(dynamic object, {bool cleanUp = false}) {
     dynamic parsedObject = _toMap(object, {});
 
@@ -142,6 +42,10 @@ class JsonParser {
   }
 
   dynamic _toMap(dynamic object, Set<dynamic> seen) {
+    if (object == null) {
+      return object;
+    }
+
     if (seen.contains(object)) {
       throw StateError('Circular reference detected');
     }
@@ -206,6 +110,7 @@ class JsonParser {
   }
 
   // -------------------------- DESERIALIZE FUNCTION -------------------------- \\
+  @override
   dynamic deserialize(String jsonString, Type targetType) {
     dynamic jsonObject = jsonDecode(jsonString);
     return _fromMap(jsonObject, targetType);
@@ -215,32 +120,22 @@ class JsonParser {
     if (json == null) return null;
 
     if (json is List) {
-      ClassMirror classMirror =
-          reflectType(targetType) as ClassMirror; //class mirror on 'list'
-      TypeMirror paramTypeMirror =
-          classMirror.typeArguments.first; //class mirror in T (siendo List<T>)
-      Type subType = paramTypeMirror.reflectedType; //T
+      ClassMirror classMirror = reflectType(targetType) as ClassMirror;
+      TypeMirror paramTypeMirror = classMirror.typeArguments.first;
+      Type subType = paramTypeMirror.reflectedType;
 
       return json.map((item) => _fromMap(item, subType)).toList();
     } else if (defaultFromJsonParser.containsKey(targetType)) {
       return defaultFromJsonParser[targetType]!(json);
-    } else {
+    } else if (json is Map) {
       var classMirror = reflectClass(targetType);
-      /*var instanceMirrorTest = classMirror.newInstance(Symbol('fromJson'), [
-        "",
-        1,
-        Duration(),
-        true,
-        <Address>[],
-        Address.named(streetName: "123", houseNumber: 123),
-      ]);*/
       var instanceMirror = classMirror.newInstance(Symbol(''), []);
 
       for (var declaration in classMirror.declarations.values) {
         if (declaration is VariableMirror && !declaration.isStatic) {
           String fieldName = _getFieldName(declaration);
 
-          if (json[fieldName] != null) {
+          if (json.containsKey(fieldName)) {
             FromJsonParserFunction? parserFunction =
                 _getFromJsonParser(declaration.metadata);
 
@@ -250,7 +145,7 @@ class JsonParser {
               fieldValue = parserFunction(fieldValue);
             } else {
               if (fieldValue is Map) {
-                print('map 1');
+                //TODO
               } else {}
               fieldValue = _fromMap(fieldValue, declaration.type.reflectedType);
             }
@@ -303,11 +198,33 @@ class JsonParser {
             }
 
             instanceMirror.setField(declaration.simpleName, fieldValue);
+          } else {
+            ClassMirror classMirror = declaration.type as ClassMirror;
+            List<TypeMirror> fieldTypeMirror = classMirror.typeArguments;
+            String params = fieldTypeMirror
+                .fold(
+                  "",
+                  (previousValue, reflectedType) =>
+                      '$previousValue, ${reflectedType.toString()}',
+                )
+                .replaceFirst(",", "")
+                .trim();
+
+            if (params.isNotEmpty) {
+              params = '<$params>';
+            }
+
+            String rawFieldName = MirrorSystem.getName(declaration.simpleName);
+
+            throw StateError(
+                'No value in map present for field: `${classMirror.reflectedType}$params $rawFieldName`');
           }
         }
       }
 
       return instanceMirror.reflectee;
+    } else {
+      throw StateError('No hay mapper para este tipo de dato');
     }
   }
 
