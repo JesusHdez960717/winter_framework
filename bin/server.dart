@@ -18,7 +18,7 @@ Response _echoHandler(Request request) {
   return Response.ok('$message\n');
 }
 
-void main(List<String> args) async {
+void main() async {
   // Use any available host or container IP (usually `0.0.0.0`).
   final ip = InternetAddress.anyIPv4;
 
@@ -27,7 +27,7 @@ void main(List<String> args) async {
       Pipeline().addMiddleware(logRequests()).addHandler(_router.call);
 
   // For running in containers, we respect the PORT environment variable.
-  final port = int.parse(Platform.environment['PORT'] ?? '8080');
+  final port = int.parse(Platform.environment['PORT'] ?? '8089');
   final server = await serve(handler, ip, port);
   print('Server listening on port ${server.port}');
 }
