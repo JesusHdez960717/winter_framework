@@ -1,11 +1,12 @@
 import 'package:test/test.dart';
 
-import '../bin/jackson/json_parser.dart';
-import '../bin/jackson/naming_strategies.dart';
+import '../bin/jackson/object_mapper_impl.dart';
+import '../bin/winter/winter.dart';
 
 void main() {
   test('Base Usage - DateTime', () async {
-    JsonParser parser = JsonParser(namingStrategy: NamingStrategies.snakeCase);
+    ObjectMapper parser =
+        ObjectMapperImpl(namingStrategy: NamingStrategies.snakeCase);
 
     DateTime object = DateTime.now();
     String result = object.toIso8601String();
@@ -15,7 +16,7 @@ void main() {
   });
 
   test('Base Usage - DateTime - Custom Parser', () async {
-    JsonParser parser = JsonParser(
+    ObjectMapperImpl parser = ObjectMapperImpl(
       namingStrategy: NamingStrategies.snakeCase,
       defaultToJsonParser: {
         DateTime: (dynamic object) => (object as DateTime).toString(),
@@ -30,7 +31,7 @@ void main() {
   });
 
   test('Base Usage - Int', () async {
-    JsonParser parser = JsonParser(namingStrategy: NamingStrategies.snakeCase);
+    ObjectMapperImpl parser = ObjectMapperImpl(namingStrategy: NamingStrategies.snakeCase);
 
     int object = 5;
     String result = "5";
@@ -40,7 +41,7 @@ void main() {
   });
 
   test('Base Usage - List', () async {
-    JsonParser parser = JsonParser(namingStrategy: NamingStrategies.snakeCase);
+    ObjectMapperImpl parser = ObjectMapperImpl(namingStrategy: NamingStrategies.snakeCase);
 
     List<int> object = [1, 2, 3, 4, 5];
     String result = "[1,2,3,4,5]";
