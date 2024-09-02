@@ -1,13 +1,15 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 import 'package:shelf_router/shelf_router.dart';
 
-import '../http/http.dart';
 import 'build_context.dart';
 import 'server_config.dart';
 import 'winter_router.dart';
+
+import '../http/http.dart';
 
 class WinterServer {
   final BuildContext context;
@@ -26,39 +28,27 @@ class WinterServer {
         router = router ?? WinterRouter();
 
   Future<WinterServer> start() async {
-    final Router shelfRouter = Router();
+    final startTime = DateTime.now();
+
+    /*final Router shelfRouter = Router();
 
     for (var element in router.expandedRoutes) {
       shelfRouter.add(
         element.method.name,
         element.path,
         (Request request) async {
-          RequestEntity<String> requestEntity = RequestEntity(
-            method: HttpMethod.valueOf(request.method),
-            headers: HttpHeaders(request.headers),
-            requestedUri: request.requestedUri,
-            url: request.url,
-            handlerPath: request.handlerPath,
-            protocolVersion: request.protocolVersion,
-            body: request.contentLength != null
-                ? await request.readAsString()
-                : null,
-          );
+          RequestEntity<String> requestEntity =
+              await request.toEntity<String>();
 
           ResponseEntity responseEntity = await element.handler(requestEntity);
 
-          return Response(
-            responseEntity.status.value,
-            headers: responseEntity.headers,
-            body: responseEntity.body,
-            encoding: responseEntity.encoding,
-          );
+          return responseEntity.toResponse();
         },
       );
-    }
+    }*/
 
     final handler =
-        Pipeline().addMiddleware(logRequests()).addHandler(shelfRouter.call);
+        Pipeline().addMiddleware(logRequests()).addHandler(router.call);
 
     runningServer = await serve(
       handler,
@@ -67,7 +57,9 @@ class WinterServer {
     );
     hasStarted = true;
 
-    print('Server listening on port ${runningServer.port}');
+    final endTime = DateTime.now();
+    double timeDiff = endTime.difference(startTime).inMilliseconds / 1000;
+    print('Server started on port ${runningServer.port} ($timeDiff sec)');
 
     return this;
   }

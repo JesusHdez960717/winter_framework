@@ -15,45 +15,23 @@ void main() async {
               handler: (request) => ResponseEntity.ok(
                 body: request.requestedUri.toString(),
               ),
-            ),
-            WinterRoute(
-              path: '/test2',
-              method: HttpMethod.GET,
-              handler: (request) => ResponseEntity.ok(
-                body: request.requestedUri.toString(),
-              ),
               routes: [
                 WinterRoute(
-                  path: '/qwe',
+                  path: '/abc',
                   method: HttpMethod.GET,
                   handler: (request) => ResponseEntity.ok(
                     body: request.requestedUri.toString(),
                   ),
                 ),
-              ]
+              ],
             ),
           ],
         ),
         WinterRoute(
-            path: '/abc',
-            method: HttpMethod.GET,
-            handler: _rootHandler,
-            routes: [
-              WinterRoute(
-                path: '/abc1',
-                method: HttpMethod.GET,
-                handler: (request) => ResponseEntity.ok(
-                  body: request.requestedUri.toString(),
-                ),
-              ),
-              WinterRoute(
-                path: '/abc2',
-                method: HttpMethod.GET,
-                handler: (request) => ResponseEntity.ok(
-                  body: request.requestedUri.toString(),
-                ),
-              ),
-            ]),
+          path: '/',
+          method: HttpMethod.GET,
+          handler: _rootHandler,
+        ),
       ],
     ),
   ).start();
