@@ -2,23 +2,60 @@ import 'winter/winter.dart';
 
 void main() async {
   WinterServer runningServer = await WinterServer(
-    context: BuildContext()
-      ..routes.addAll(
-        [
-          RequestRoute(
-            path: '/test',
-            method: HttpMethod.GET,
-            handler: (request) => ResponseEntity.ok(
-              body: 'Hello world ---- test',
+    router: WinterRouter(
+      routes: [
+        WinterRoute(
+          path: '/',
+          method: HttpMethod.GET,
+          handler: _rootHandler,
+          routes: [
+            WinterRoute(
+              path: '/test1',
+              method: HttpMethod.GET,
+              handler: (request) => ResponseEntity.ok(
+                body: request.requestedUri.toString(),
+              ),
             ),
-          ),
-          RequestRoute(
-            path: '/',
+            WinterRoute(
+              path: '/test2',
+              method: HttpMethod.GET,
+              handler: (request) => ResponseEntity.ok(
+                body: request.requestedUri.toString(),
+              ),
+              routes: [
+                WinterRoute(
+                  path: '/qwe',
+                  method: HttpMethod.GET,
+                  handler: (request) => ResponseEntity.ok(
+                    body: request.requestedUri.toString(),
+                  ),
+                ),
+              ]
+            ),
+          ],
+        ),
+        WinterRoute(
+            path: '/abc',
             method: HttpMethod.GET,
             handler: _rootHandler,
-          ),
-        ],
-      ),
+            routes: [
+              WinterRoute(
+                path: '/abc1',
+                method: HttpMethod.GET,
+                handler: (request) => ResponseEntity.ok(
+                  body: request.requestedUri.toString(),
+                ),
+              ),
+              WinterRoute(
+                path: '/abc2',
+                method: HttpMethod.GET,
+                handler: (request) => ResponseEntity.ok(
+                  body: request.requestedUri.toString(),
+                ),
+              ),
+            ]),
+      ],
+    ),
   ).start();
 }
 

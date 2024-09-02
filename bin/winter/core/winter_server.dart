@@ -7,22 +7,28 @@ import 'package:shelf_router/shelf_router.dart';
 import '../http/http.dart';
 import 'build_context.dart';
 import 'server_config.dart';
+import 'winter_router.dart';
 
 class WinterServer {
   final BuildContext context;
   final ServerConfig config;
+  final WinterRouter router;
 
   late final HttpServer runningServer;
   bool hasStarted = false;
 
-  WinterServer({BuildContext? context, ServerConfig? config})
-      : context = context ?? BuildContext(),
-        config = config ?? ServerConfig();
+  WinterServer({
+    BuildContext? context,
+    ServerConfig? config,
+    WinterRouter? router,
+  })  : context = context ?? BuildContext(),
+        config = config ?? ServerConfig(),
+        router = router ?? WinterRouter();
 
   Future<WinterServer> start() async {
     final Router shelfRouter = Router();
 
-    for (var element in context.routes) {
+    for (var element in router.expandedRoutes) {
       shelfRouter.add(
         element.method.name,
         element.path,
