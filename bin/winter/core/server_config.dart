@@ -1,5 +1,7 @@
 import 'dart:io';
 
+const int defaultServerPort = 8080;
+
 class ServerConfig {
   late final InternetAddress ip;
   late final int port;
@@ -9,6 +11,6 @@ class ServerConfig {
     int? port,
   }) {
     this.ip = ip ?? InternetAddress.anyIPv4;
-    this.port = port ?? 8080;
+    this.port = port ?? defaultServerPort;
   }
 }

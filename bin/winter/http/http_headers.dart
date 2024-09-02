@@ -1,6 +1,6 @@
-import '../utils/utils.dart';
+import 'dart:collection';
 
-class HttpHeaders extends BaseMap<String, String> {
+class HttpHeaders extends UnmodifiableMapView<String, String> {
   /// The HTTP {@code Accept} header field name.
   /// @see <a href="https://tools.ietf.org/html/rfc7231#section-5.3.2">Section 5.3.2 of RFC 7231</a>
   static final String ACCEPT = "Accept";
@@ -253,7 +253,9 @@ class HttpHeaders extends BaseMap<String, String> {
   /// @see <a href="https://tools.ietf.org/html/rfc7235#section-4.1">Section 4.1 of RFC 7235</a>
   static final String WWW_AUTHENTICATE = "WWW-Authenticate";
 
-  HttpHeaders.empty();
+  /// The default set of headers for a message created with no body and no
+  /// explicit headers.
+  HttpHeaders.empty() : this({CONTENT_LENGTH: '0'});
 
-  HttpHeaders(Map<String, String>? headers) : super(map: headers);
+  HttpHeaders(Map<String, String>? headers) : super(headers ?? {});
 }

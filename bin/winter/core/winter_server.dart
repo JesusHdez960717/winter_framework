@@ -4,6 +4,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import '../http/http.dart';
 import 'build_context.dart';
 import 'server_config.dart';
 
@@ -14,13 +15,44 @@ class WinterServer {
   late final HttpServer runningServer;
   bool hasStarted = false;
 
-  WinterServer({required this.context, required this.config});
+  WinterServer({BuildContext? context, ServerConfig? config})
+      : context = context ?? BuildContext(),
+        config = config ?? ServerConfig();
 
   Future<WinterServer> start() async {
-    Router _router = await _getRouter();
+    final Router shelfRouter = Router();
+
+    for (var element in context.routes) {
+      shelfRouter.add(
+        element.method.name,
+        element.path,
+        (Request request) async {
+          RequestEntity<String> requestEntity = RequestEntity(
+            method: HttpMethod.valueOf(request.method),
+            headers: HttpHeaders(request.headers),
+            requestedUri: request.requestedUri,
+            url: request.url,
+            handlerPath: request.handlerPath,
+            protocolVersion: request.protocolVersion,
+            body: request.contentLength != null
+                ? await request.readAsString()
+                : null,
+          );
+
+          ResponseEntity responseEntity = await element.handler(requestEntity);
+
+          return Response(
+            responseEntity.status.value,
+            headers: responseEntity.headers,
+            body: responseEntity.body,
+            encoding: responseEntity.encoding,
+          );
+        },
+      );
+    }
 
     final handler =
-        Pipeline().addMiddleware(logRequests()).addHandler(_router.call);
+        Pipeline().addMiddleware(logRequests()).addHandler(shelfRouter.call);
 
     runningServer = await serve(
       handler,
@@ -34,18 +66,7 @@ class WinterServer {
     return this;
   }
 
-  Future<Router> _getRouter() async {
-    Response rootHandler(Request req) {
-      return Response.ok('Hello, World!\n');
-    }
-
-    Response echoHandler(Request request) {
-      final message = request.params['message'];
-      return Response.ok('$message\n');
-    }
-
-    return Router()
-      ..get('/', rootHandler)
-      ..get('/echo/<message>', echoHandler);
+  Future close({bool force = false}) async {
+    return runningServer.close(force: force);
   }
 }
