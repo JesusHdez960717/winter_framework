@@ -8,13 +8,20 @@ class RequestEntity<T> extends HttpEntity<T> {
   final Uri requestedUri;
   final String handlerPath;
 
+  ///url con la que se definio la ruta, ex: https://mi-url.com/{path-param-1}/test/{path-param-2}
+  final String templateUrl;
+
   final String protocolVersion;
 
   final HttpMethod method;
 
+  Map<String, String>? pathParams;
+  Map<String, String>? queryParams;
+
   RequestEntity({
     required this.method,
     required this.requestedUri,
+    required this.templateUrl,
     super.headers,
     super.body,
     String? protocolVersion,
@@ -58,7 +65,51 @@ class RequestEntity<T> extends HttpEntity<T> {
           'handlerPath "${this.handlerPath}" and url "${this.url}" must '
               'combine to equal requestedUri path "${requestedUri.path}".');
     }
+
+    pathParams = _extractPathParams(
+      templateUrl,
+      requestedUri.toString(),
+    );
+    queryParams = _extractQueryParams(requestedUri.toString());
   }
+}
+
+Map<String, String> _extractPathParams(String templateUrl, String actualUrl) {
+  actualUrl = Uri.parse(actualUrl).path;//remove http(s)://domain.com
+
+  // Separar la parte de la URL que contiene los parámetros de consulta (si existe)
+  String templateUrlPath = templateUrl.split('?').first;
+  String actualUrlPath = actualUrl.split('?').first;
+
+  // Crear una expresión regular para encontrar los parámetros de ruta en la plantilla
+  final RegExp pathParamPattern = RegExp(r'{([^}]+)}');
+
+  // Crear una expresión regular para capturar los valores correspondientes en la URL real
+  String regexPattern = templateUrlPath.replaceAllMapped(
+      pathParamPattern, (match) => r'([^/?]+)');
+
+  // Añadir el inicio (^) y el final opcional ($) para asegurar una coincidencia completa
+  regexPattern = '^' + regexPattern;
+
+  // Encontrar los valores de los parámetros de ruta en la URL real
+  final RegExpMatch? matchUrl = RegExp(regexPattern).firstMatch(actualUrlPath);
+
+  Map<String, String> pathParam = {};
+  Iterable<RegExpMatch> matches = pathParamPattern.allMatches(templateUrlPath);
+
+  int index = 1;
+  for (final RegExpMatch match in matches) {
+    String paramName = match.group(1)!;
+    String paramValue = matchUrl?.group(index++) ?? '';
+    pathParam[paramName] = paramValue;
+  }
+
+  return pathParam;
+}
+
+Map<String, String> _extractQueryParams(String actualUrl) {
+  Uri uri = Uri.parse(actualUrl);
+  return uri.queryParameters;
 }
 
 /// Computes `url` from the provided [Request] constructor arguments.

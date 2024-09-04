@@ -13,24 +13,42 @@ void main() async {
               path: '/test1',
               method: HttpMethod.GET,
               handler: (request) => ResponseEntity.ok(
-                body: request.requestedUri.toString(),
+                body: '/test1 ${request.requestedUri.toString()}',
               ),
               routes: [
                 WinterRoute(
-                  path: '/abc',
+                  path: '/{test}',
                   method: HttpMethod.GET,
                   handler: (request) => ResponseEntity.ok(
-                    body: request.requestedUri.toString(),
+                    body: '/{test} query: ${request.queryParams}, path: ${request.pathParams}',
                   ),
+                  routes: [
+                    WinterRoute(
+                      path: '/{other}',
+                      method: HttpMethod.GET,
+                      handler: (request) => ResponseEntity.ok(
+                        body: '/{other} query: ${request.queryParams}, path: ${request.pathParams}',
+                      ),
+                    ),
+                    WinterRoute(
+                      path: '/789',
+                      method: HttpMethod.GET,
+                      handler: (request) => ResponseEntity.ok(
+                        body: '/789 query: ${request.queryParams}, path: ${request.pathParams}',
+                      ),
+                    ),
+                  ]
                 ),
-              ],
+              ]
+            ),
+            WinterRoute(
+              path: '/test2/{param}',
+              method: HttpMethod.GET,
+              handler: (request) => ResponseEntity.ok(
+                body: '/test2/{param} query: ${request.queryParams}, path: ${request.pathParams}',
+              ),
             ),
           ],
-        ),
-        WinterRoute(
-          path: '/',
-          method: HttpMethod.GET,
-          handler: _rootHandler,
         ),
       ],
     ),

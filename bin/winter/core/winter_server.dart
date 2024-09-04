@@ -54,6 +54,7 @@ class WinterServer {
       handler,
       config.ip,
       config.port,
+      poweredByHeader: 'Powered by winter-server',
     );
     hasStarted = true;
 
