@@ -10,3 +10,4 @@ export 'core/winter_router.dart';
 export 'http/http.dart';
 ///util exports
 export 'utils/utils.dart';
+export 'core/router/router_config.dart';

@@ -1,40 +1,46 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:shelf/shelf.dart';
 
 import '../http/http.dart';
+import 'router/router_config.dart';
 
 typedef RequestHandler<In, Out> = FutureOr<ResponseEntity<Out>> Function(
     RequestEntity<In> request);
 
+ResponseEntity<String> notFoundResponse = ResponseEntity(
+  headers: HttpHeaders.empty(),
+  body: 'Route not found',
+  status: HttpStatus.NOT_FOUND,
+);
+
+ResponseEntity<String> methodNotAllowedResponse = ResponseEntity(
+  headers: HttpHeaders.empty(),
+  body: 'Method not allowed',
+  status: HttpStatus.METHOD_NOT_ALLOWED,
+);
+
 class WinterRouter {
-  static ResponseEntity<String> notFoundResponse = ResponseEntity(
-    headers: HttpHeaders.empty(),
-    body: 'Route not found',
-    status: HttpStatus.NOT_FOUND,
-  );
-
-  static ResponseEntity<String> methodNotAllowedResponse = ResponseEntity(
-    headers: HttpHeaders.empty(),
-    body: 'Method not allowed',
-    status: HttpStatus.METHOD_NOT_ALLOWED,
-  );
-
   String basePath;
-  final List<WinterRoute> _routes;
+  final RouterConfig config;
 
-  WinterRouter({
-    this.basePath = '',
-    List<WinterRoute> routes = const [],
-  }) : _routes = routes {
-    expandedRoutes;//llama al getter para que haga el flatten
-  }
+  final List<WinterRoute> _rawRoutes;
 
   //TODO: por tema eficiencia se pueden agrupar las rutas por su method, o el flatten hacerlo igual jerarquico
   List<WinterRoute>? _expandedRoutes;
 
+  WinterRouter({
+    this.basePath = '',
+    List<WinterRoute> routes = const [],
+    RouterConfig? config,
+  })  : _rawRoutes = routes,
+        config = config ?? RouterConfig() {
+    expandedRoutes; //llama al getter para que haga el flatten cuando se inicializa
+  }
+
   List<WinterRoute> get expandedRoutes {
-    _expandedRoutes ??= _flattenRoutes(_routes, initialPath: basePath);
+    _expandedRoutes ??= _flattenRoutes(_rawRoutes, initialPath: basePath);
 
     return _expandedRoutes ?? [];
   }
@@ -46,15 +52,29 @@ class WinterRouter {
       return methodNotAllowedResponse.toResponse();
     }
 
-    for (var route in expandedRoutes) {
-      if (route.method != requestMethod) {
-        continue;
-      }
-      if (route.match('/${request.url.path}')) {
-        return await route.invoke(request);
+    //busco las rutas que coincidan con el path
+    String urlPath = '/${request.url.path}';
+    List<WinterRoute> matchedRoutes = expandedRoutes
+        .where(
+          (element) => element.match(urlPath),
+        )
+        .toList();
+
+    //no hay ninguna: 404
+    if (matchedRoutes.isEmpty) {
+      return notFoundResponse.toResponse();
+    } else {
+      //hay alguna, reviso method
+      WinterRoute? finalRoute = matchedRoutes.firstWhereOrNull(
+        (element) => element.method == requestMethod,
+      );
+      if (finalRoute == null) {
+        //ninguna coincide con ese method
+        return methodNotAllowedResponse.toResponse();
+      } else {
+        return await finalRoute.invoke(request);
       }
     }
-    return notFoundResponse.toResponse();
   }
 
   List<WinterRoute> _flattenRoutes(
@@ -67,17 +87,15 @@ class WinterRouter {
       for (var route in routes) {
         String fullPath =
             (parentPath + route.path).replaceAll(RegExp(r'/+'), '/');
+        final currentRoute = WinterRoute(
+          path: fullPath,
+          method: route.method,
+          handler: route.handler,
+        );
         if (isValidUri(fullPath)) {
-          result.add(
-            WinterRoute(
-              path: fullPath,
-              method: route.method,
-              handler: route.handler,
-            ),
-          );
+          result.add(currentRoute);
         } else {
-          print(
-              '$fullPath is not a valid URL. IGNORING'); //TODO: agregar un flag para lanzar excepcion o ignorar
+          config.onInvalidUrl.onInvalid(currentRoute);
         }
 
         if (route.routes.isNotEmpty) {
