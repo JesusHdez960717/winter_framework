@@ -1,4 +1,4 @@
-import '../winter_router.dart';
+import '../core.dart';
 
 class RouterConfig {
   RouterConfig({OnInvalidUrl? onInvalidUrl})
