@@ -31,7 +31,7 @@ void main() async {
                       ),
                     ),
                     WinterRoute(
-                      path: '/789',
+                      path: '/7 8 9',
                       method: HttpMethod.GET,
                       handler: (request) => ResponseEntity.ok(
                         body: '/789 query: ${request.queryParams}, path: ${request.pathParams}',

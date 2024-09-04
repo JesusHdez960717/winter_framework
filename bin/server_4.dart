@@ -1,33 +1,22 @@
 import 'dart:core';
 
-bool matchUrl(String templateUrl, String actualUrl) {
-  // Separar las partes de la URL y los parámetros de consulta
-  String templateUrlPath = templateUrl.split('?').first;
-  String actualUrlPath = actualUrl.split('?').first;
-
-  // Crear una expresión regular para encontrar los parámetros de ruta en la plantilla
-  final RegExp pathParamPattern = RegExp(r'{([^}]+)}');
-
-  // Crear una expresión regular para capturar los valores correspondientes en la URL real
-  String regexPattern = templateUrlPath.replaceAllMapped(pathParamPattern, (match) => r'([^/?]+)');
-  regexPattern = '^' + regexPattern + r'$'; // Añadir el inicio y el final
-
-  // Comprobar si la parte de la URL coincide
-  final RegExpMatch? matchUrlPath = RegExp(regexPattern).firstMatch(actualUrlPath);
-  if (matchUrlPath == null) {
+bool isValidUri(String path) {
+  // Intenta crear un objeto Uri con solo el path
+  try {
+    path = path.replaceAll('{', '%7B');
+    path = path.replaceAll('}', '%7D');
+    Uri uri = Uri(path: path);
+    // Valida que el path no contenga caracteres no permitidos y que no comience con "//"
+    return !path.startsWith('//') && uri.path == path;
+  } catch (e) {
     return false;
   }
-
-  return true;
 }
 
 void main() {
-  final String templateUrl = '/test2/{param}';
-  final String actualUrl1 = '/test2/abc?query_param1_key=query_param1_value&query_param2_key=query_param2_value';
-  final String actualUrl2 = '/test1/';
-  final String actualUrl3 = '/test2/abc';
-
-  print(matchUrl(templateUrl, actualUrl1)); // true
-  print(matchUrl(templateUrl, actualUrl2)); // false
-  print(matchUrl(templateUrl, actualUrl3)); // false
+  print(isValidUri('/test/\\123'));          // false (contiene una barra invertida)
+  print(isValidUri('/test/{param}'));       // true (válido dependiendo del uso)
+  print(isValidUri('/test/123'));           // true
+  print(isValidUri('//test2/{param}'));     // false (inicia con //)
+  print(isValidUri('/test/12 3'));          // false (contiene un espacio)
 }

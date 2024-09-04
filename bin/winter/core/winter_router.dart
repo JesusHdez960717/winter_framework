@@ -26,7 +26,9 @@ class WinterRouter {
   WinterRouter({
     this.basePath = '',
     List<WinterRoute> routes = const [],
-  }) : _routes = routes;
+  }) : _routes = routes {
+    expandedRoutes;//llama al getter para que haga el flatten
+  }
 
   //TODO: por tema eficiencia se pueden agrupar las rutas por su method, o el flatten hacerlo igual jerarquico
   List<WinterRoute>? _expandedRoutes;
@@ -65,13 +67,19 @@ class WinterRouter {
       for (var route in routes) {
         String fullPath =
             (parentPath + route.path).replaceAll(RegExp(r'/+'), '/');
-        result.add(
-          WinterRoute(
-            path: fullPath,
-            method: route.method,
-            handler: route.handler,
-          ),
-        );
+        if (isValidUri(fullPath)) {
+          result.add(
+            WinterRoute(
+              path: fullPath,
+              method: route.method,
+              handler: route.handler,
+            ),
+          );
+        } else {
+          print(
+              '$fullPath is not a valid URL. IGNORING'); //TODO: agregar un flag para lanzar excepcion o ignorar
+        }
+
         if (route.routes.isNotEmpty) {
           flattenRoutes(fullPath, route.routes);
         }
@@ -81,6 +89,19 @@ class WinterRouter {
     flattenRoutes(basePath, routers);
 
     return result;
+  }
+
+  bool isValidUri(String path) {
+    // Intenta crear un objeto Uri con solo el path
+    try {
+      path = path.replaceAll('{', '%7B');
+      path = path.replaceAll('}', '%7D');
+      Uri uri = Uri(path: path);
+      // Valida que el path no contenga caracteres no permitidos y que no comience con "//"
+      return !path.startsWith('//') && uri.path == path;
+    } catch (e) {
+      return false;
+    }
   }
 }
 
