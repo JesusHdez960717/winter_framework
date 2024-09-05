@@ -74,7 +74,14 @@ void main() async {
         ),
       ],
     ),
-  ).start();
+  ).start(
+    beforeStart: () async {
+      print(WinterServer.instance);
+    },
+    afterStart: () async {
+      print(WinterServer.instance);
+    },
+  );
 }
 
 ResponseEntity _rootHandler(RequestEntity req) {
