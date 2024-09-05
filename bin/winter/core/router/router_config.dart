@@ -2,25 +2,19 @@ import '../core.dart';
 
 class RouterConfig {
   RouterConfig({OnInvalidUrl? onInvalidUrl})
-      : onInvalidUrl = onInvalidUrl ?? IgnoreRoute.base();
+      : onInvalidUrl = onInvalidUrl ?? OnInvalidUrl.ignore();
 
   final OnInvalidUrl onInvalidUrl;
 }
 
 //---------- START: OnInvalidUrl ----------\\
-typedef RouteConsumer = void Function(WinterRoute failedRoute);
-
-abstract class OnInvalidUrl {
-  final RouteConsumer onInvalid;
+class OnInvalidUrl {
+  final void Function(WinterRoute failedRoute) onInvalid;
 
   OnInvalidUrl(this.onInvalid);
-}
 
-class IgnoreRoute extends OnInvalidUrl {
-  IgnoreRoute(super.onInvalid);
-
-  factory IgnoreRoute.base({bool log = true}) {
-    return IgnoreRoute(
+  factory OnInvalidUrl.ignore({bool log = true}) {
+    return OnInvalidUrl(
       (failedRoute) {
         if (log) {
           print(
@@ -29,13 +23,9 @@ class IgnoreRoute extends OnInvalidUrl {
       },
     );
   }
-}
 
-class FailRoute extends OnInvalidUrl {
-  FailRoute(super.onInvalid);
-
-  factory FailRoute.base() {
-    return FailRoute(
+  factory OnInvalidUrl.fail() {
+    return OnInvalidUrl(
       (failedRoute) {
         throw StateError(
             '${failedRoute.path} is not a valid URL. Failing to start app');

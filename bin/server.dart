@@ -4,7 +4,9 @@ void main() async {
   WinterServer runningServer = await WinterServer(
     config: ServerConfig(port: 9090),
     router: WinterRouter(
-      config: RouterConfig(onInvalidUrl: IgnoreRoute.base(log: false)),
+      config: RouterConfig(
+        onInvalidUrl: OnInvalidUrl.fail(),
+      ),
       routes: [
         WinterRoute(
           path: '/',
@@ -35,7 +37,7 @@ void main() async {
                           ),
                         ),
                         WinterRoute(
-                          path: '/7 8 9',
+                          path: '/789',
                           method: HttpMethod.GET,
                           handler: (request) => ResponseEntity.ok(
                             body:
