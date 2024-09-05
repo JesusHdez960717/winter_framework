@@ -23,7 +23,9 @@ class WinterRouter {
     RouterConfig? config,
   })  : _rawRoutes = routes,
         config = config ?? RouterConfig() {
-    expandedRoutes; //llama al getter para que haga el flatten cuando se inicializa
+    this.config.onLoadedRoutes.afterInit(
+          expandedRoutes, //llama al getter para que haga el flatten cuando se inicializa
+        );
   }
 
   List<WinterRoute> get expandedRoutes {

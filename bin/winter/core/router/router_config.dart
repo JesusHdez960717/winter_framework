@@ -1,13 +1,16 @@
 import '../core.dart';
 
 class RouterConfig {
-  RouterConfig({OnInvalidUrl? onInvalidUrl})
-      : onInvalidUrl = onInvalidUrl ?? OnInvalidUrl.ignore();
+  RouterConfig({
+    OnInvalidUrl? onInvalidUrl,
+    OnLoadedRoutes? onLoadedRoutes,
+  })  : onInvalidUrl = onInvalidUrl ?? OnInvalidUrl.ignore(),
+        onLoadedRoutes = onLoadedRoutes ?? OnLoadedRoutes.log();
 
   final OnInvalidUrl onInvalidUrl;
+  final OnLoadedRoutes onLoadedRoutes;
 }
 
-//---------- START: OnInvalidUrl ----------\\
 class OnInvalidUrl {
   final void Function(WinterRoute failedRoute) onInvalid;
 
@@ -34,4 +37,27 @@ class OnInvalidUrl {
   }
 }
 
-//---------- END: OnInvalidUrl ----------\\
+class OnLoadedRoutes {
+  final void Function(List<WinterRoute> allRoutes) afterInit;
+
+  OnLoadedRoutes(this.afterInit);
+
+  factory OnLoadedRoutes.ignore() {
+    return OnLoadedRoutes(
+      (allRoutes) {},
+    );
+  }
+
+  factory OnLoadedRoutes.log() {
+    return OnLoadedRoutes(
+      (allRoutes) {
+        print('*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
+        print('Config Routes:');
+        for (var element in allRoutes) {
+          print('${element.method.name}: ${element.path}');
+        }
+        print('*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*');
+      },
+    );
+  }
+}
