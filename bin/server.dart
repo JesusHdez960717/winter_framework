@@ -1,6 +1,8 @@
 import 'winter/winter.dart';
 
 void main() async {
+  WinterDI.instance.put('Hello world (from DI)', tag: 'hello-world');
+
   WinterServer runningServer = await WinterServer(
     config: ServerConfig(port: 9090),
     router: WinterRouter(
@@ -8,6 +10,20 @@ void main() async {
         onInvalidUrl: OnInvalidUrl.fail(),
       ),
       routes: [
+        WinterRoute(
+          path: '/hw1',
+          method: HttpMethod.GET,
+          handler: (request) => ResponseEntity.ok(
+            body: WinterDI.instance.find<String>(tag: 'hello-world'),
+          ),
+        ),
+        WinterRoute(
+          path: '/hw2',
+          method: HttpMethod.GET,
+          handler: (request) => ResponseEntity.ok(
+            body: WinterServer.instance.di.find<String>(tag: 'hello-world'),
+          ),
+        ),
         WinterRoute(
           path: '/',
           method: HttpMethod.GET,
@@ -30,10 +46,10 @@ void main() async {
                       routes: [
                         WinterRoute(
                           path: '/{other}',
-                          method: HttpMethod.GET,
+                          method: HttpMethod.POST,
                           handler: (request) => ResponseEntity.ok(
                             body:
-                                '/{other} query: ${request.queryParams}, path: ${request.pathParams}',
+                                '/{other} query: ${request.queryParams}, path: ${request.pathParams}, body ${request.body}',
                           ),
                         ),
                         WinterRoute(

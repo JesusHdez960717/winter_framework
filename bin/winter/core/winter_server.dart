@@ -3,49 +3,45 @@ import 'dart:io';
 
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart';
-import 'package:shelf_router/shelf_router.dart';
 
-import 'build_context.dart';
-import 'server_config.dart';
-import 'winter_router.dart';
-
-import '../http/http.dart';
+import 'core.dart';
 
 class WinterServer {
+  static WinterServer get instance {
+    if (_winterServer == null) {
+      throw StateError(
+          'Server hasn\'t starter yet. Try calling start() first.');
+    }
+    return _winterServer!;
+  }
+
+  static WinterServer? _winterServer;
+
   final BuildContext context;
   final ServerConfig config;
   final WinterRouter router;
+  final WinterDI di;
 
   late final HttpServer runningServer;
-  bool hasStarted = false;
+
+  bool get hasStarted => _winterServer != null;
 
   WinterServer({
     BuildContext? context,
     ServerConfig? config,
     WinterRouter? router,
+    WinterDI? di,
   })  : context = context ?? BuildContext(),
         config = config ?? ServerConfig(),
-        router = router ?? WinterRouter();
+        router = router ?? WinterRouter(),
+        di = di ?? WinterDI.instance;
 
   Future<WinterServer> start() async {
+    if (_winterServer != null) {
+      throw StateError('Server already starter');
+    }
+
     final startTime = DateTime.now();
-
-    /*final Router shelfRouter = Router();
-
-    for (var element in router.expandedRoutes) {
-      shelfRouter.add(
-        element.method.name,
-        element.path,
-        (Request request) async {
-          RequestEntity<String> requestEntity =
-              await request.toEntity<String>();
-
-          ResponseEntity responseEntity = await element.handler(requestEntity);
-
-          return responseEntity.toResponse();
-        },
-      );
-    }*/
 
     final handler =
         Pipeline().addMiddleware(logRequests()).addHandler(router.call);
@@ -56,7 +52,7 @@ class WinterServer {
       config.port,
       poweredByHeader: 'Powered by winter-server',
     );
-    hasStarted = true;
+    _winterServer = this;
 
     final endTime = DateTime.now();
     double timeDiff = endTime.difference(startTime).inMilliseconds / 1000;
@@ -66,6 +62,7 @@ class WinterServer {
   }
 
   Future close({bool force = false}) async {
+    _winterServer = null;
     return runningServer.close(force: force);
   }
 }
