@@ -5,12 +5,11 @@ import 'package:shelf/shelf.dart';
 import '../../http/http.dart';
 
 extension RequestExt on Request {
-  FutureOr<RequestEntity<T>> toEntity<T>({required String templateUrl}) async {
+  FutureOr<RequestEntity<T>> toEntity<T>() async {
     return RequestEntity(
       method: HttpMethod.valueOf(method),
       headers: HttpHeaders(headers),
       requestedUri: requestedUri,
-      templateUrl: templateUrl,
       url: url,
       handlerPath: handlerPath,
       protocolVersion: protocolVersion,

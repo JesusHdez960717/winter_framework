@@ -5,7 +5,7 @@ void main() async {
 
   WinterServer runningServer = await WinterServer(
     config: ServerConfig(port: 9090),
-    router: WinterRouter(
+    router: SimpleWinterRouter(
       config: RouterConfig(
         onInvalidUrl: OnInvalidUrl.fail(),
       ),
@@ -75,9 +75,6 @@ void main() async {
       ],
     ),
   ).start(
-    beforeStart: () async {
-      print(WinterServer.instance);
-    },
     afterStart: () async {
       print(WinterServer.instance);
     },

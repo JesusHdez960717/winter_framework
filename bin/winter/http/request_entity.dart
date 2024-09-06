@@ -9,19 +9,18 @@ class RequestEntity<T> extends HttpEntity<T> {
   final String handlerPath;
 
   ///url con la que se definio la ruta, ex: https://mi-url.com/{path-param-1}/test/{path-param-2}
-  final String templateUrl;
+  late final String templateUrl;
 
   final String protocolVersion;
 
   final HttpMethod method;
 
-  Map<String, String>? pathParams;
-  Map<String, String>? queryParams;
+  late final Map<String, String> pathParams;
+  late final Map<String, String> queryParams;
 
   RequestEntity({
     required this.method,
     required this.requestedUri,
-    required this.templateUrl,
     super.headers,
     super.body,
     String? protocolVersion,
@@ -66,16 +65,20 @@ class RequestEntity<T> extends HttpEntity<T> {
               'combine to equal requestedUri path "${requestedUri.path}".');
     }
 
+    queryParams = _extractQueryParams(requestedUri.toString());
+  }
+
+  void setUpPathParams(String template) {
+    templateUrl = template;
     pathParams = _extractPathParams(
       templateUrl,
       requestedUri.toString(),
     );
-    queryParams = _extractQueryParams(requestedUri.toString());
   }
 }
 
 Map<String, String> _extractPathParams(String templateUrl, String actualUrl) {
-  actualUrl = Uri.parse(actualUrl).path;//remove http(s)://domain.com
+  actualUrl = Uri.parse(actualUrl).path; //remove http(s)://domain.com
 
   // Separar la parte de la URL que contiene los parámetros de consulta (si existe)
   String templateUrlPath = templateUrl.split('?').first;

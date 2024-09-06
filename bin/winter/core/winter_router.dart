@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
-import 'package:shelf/shelf.dart';
 
 import '../http/http.dart';
 import 'router/router.dart';
@@ -9,7 +8,11 @@ import 'router/router.dart';
 typedef RequestHandler<In, Out> = FutureOr<ResponseEntity<Out>> Function(
     RequestEntity<In> request);
 
-class WinterRouter {
+abstract class WinterRouter {
+  Future<ResponseEntity> call(RequestEntity request);
+}
+
+class SimpleWinterRouter extends WinterRouter {
   String basePath;
   final RouterConfig config;
 
@@ -17,7 +20,7 @@ class WinterRouter {
 
   List<WinterRoute>? _expandedRoutes;
 
-  WinterRouter({
+  SimpleWinterRouter({
     this.basePath = '',
     List<WinterRoute> routes = const [],
     RouterConfig? config,
@@ -34,13 +37,7 @@ class WinterRouter {
     return _expandedRoutes ?? [];
   }
 
-  Future<Response> call(Request request) async {
-    HttpMethod? requestMethod =
-        HttpMethod.valueOfOrNull(request.method.toUpperCase());
-    if (requestMethod == null) {
-      return methodNotAllowedResponse.toResponse();
-    }
-
+  Future<ResponseEntity> call(RequestEntity request) async {
     //busco las rutas que coincidan con el path
     String urlPath = '/${request.url.path}';
     List<WinterRoute> matchedRoutes = expandedRoutes
@@ -51,16 +48,17 @@ class WinterRouter {
 
     //no hay ninguna: 404
     if (matchedRoutes.isEmpty) {
-      return notFoundResponse.toResponse();
+      return notFoundResponse;
     } else {
       //hay alguna, reviso method
       WinterRoute? finalRoute = matchedRoutes.firstWhereOrNull(
-        (element) => element.method == requestMethod,
+        (element) => element.method == request.method,
       );
       if (finalRoute == null) {
         //ninguna coincide con ese method
-        return methodNotAllowedResponse.toResponse();
+        return methodNotAllowedResponse;
       } else {
+        request.setUpPathParams(finalRoute.path);
         return await finalRoute.invoke(request);
       }
     }

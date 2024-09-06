@@ -34,7 +34,7 @@ class WinterServer {
     WinterDI? di,
   })  : context = context ?? BuildContext(),
         config = config ?? ServerConfig(),
-        router = router ?? WinterRouter(),
+        router = router ?? SimpleWinterRouter(),
         di = di ?? WinterDI.instance;
 
   ///Start the web server with all the current config in this object
@@ -100,8 +100,14 @@ class WinterServer {
       await beforeStart();
     }
 
-    final handler =
-        Pipeline().addMiddleware(logRequests()).addHandler(router.call);
+    final handler = Pipeline().addMiddleware(logRequests()).addHandler(
+      (request) async {
+        return (await router.call(
+          await request.toEntity(),
+        ))
+            .toResponse();
+      },
+    );
 
     runningServer = await serve(
       handler,

@@ -1,5 +1,3 @@
-import 'package:shelf/shelf.dart';
-
 import '../../http/http.dart';
 import '../core.dart';
 
@@ -56,8 +54,7 @@ class WinterRoute<In, Out> {
     return matchUrlPath != null;
   }
 
-  Future<Response> invoke(Request request) async {
-    RequestEntity<In> requestEntity = await request.toEntity(templateUrl: path);
-    return (await handler(requestEntity)).toResponse();
+  Future<ResponseEntity<Out>> invoke(RequestEntity<In> request) async {
+    return await handler(request);
   }
 }
