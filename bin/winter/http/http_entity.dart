@@ -14,7 +14,7 @@ class HttpEntity<T> {
 
   bool get hasBody => body != null;
 
-  String? header(String header) => headers[header];
+  List<String>? header(String header) => headers[header];
 
   /// The encoding of the message body.
   ///
@@ -35,7 +35,7 @@ class HttpEntity<T> {
   /// This is cached for efficient access.
   MediaType? get _contentType {
     return headers[HttpHeaders.CONTENT_TYPE] != null
-        ? MediaType.parse(headers[HttpHeaders.CONTENT_TYPE]!)
+        ? MediaType.parse(headers.singleValues[HttpHeaders.CONTENT_TYPE]!)
         : null;
   }
 }

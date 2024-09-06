@@ -8,7 +8,7 @@ extension RequestExt on Request {
   FutureOr<RequestEntity<T>> toEntity<T>() async {
     return RequestEntity(
       method: HttpMethod.valueOf(method),
-      headers: HttpHeaders(headers),
+      headers: HttpHeaders.fromSingleValues(headers),
       requestedUri: requestedUri,
       url: url,
       handlerPath: handlerPath,
