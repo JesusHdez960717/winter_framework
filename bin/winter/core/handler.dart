@@ -11,11 +11,18 @@ import '../http/response_entity.dart';
 /// For example a static file handler may read the requested URI from the
 /// filesystem and return it as the body of the [Response].
 ///
-/// A [Handler] which wraps one or more other handlers to perform pre or post
+/// A [RequestHandler] which wraps one or more other handlers to perform pre or post
 /// processing is known as a "middleware".
 ///
-/// A [Handler] may receive a request directly from an HTTP server or it
+/// A [RequestHandler] may receive a request directly from an HTTP server or it
 /// may have been touched by other middleware. Similarly the response may be
 /// directly returned by an HTTP server or have further processing done by other
 /// middleware.
-typedef Handler = FutureOr<ResponseEntity> Function(RequestEntity request);
+typedef RequestHandler = FutureOr<ResponseEntity> Function(RequestEntity request);
+
+///ExceptionHandler
+typedef ExcHandler = FutureOr<ResponseEntity> Function(
+  RequestEntity request,
+  Exception error,
+  StackTrace stackTrac,
+);

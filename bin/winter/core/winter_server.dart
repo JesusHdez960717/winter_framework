@@ -1,10 +1,18 @@
-import 'dart:async';
+/*import 'dart:async';
 import 'dart:io';
 
 import 'package:shelf/shelf.dart';
-import 'package:shelf/shelf_io.dart';
+import 'package:shelf/shelf_io.dart' as ShelfIo;
+
+import 'inner/winter_io.dart' as WinterIo;
 
 import 'core.dart';
+import 'router/entity_parser_extension.dart';*/
+import 'dart:async';
+import 'dart:io';
+
+import 'core.dart';
+import 'inner/winter_io.dart' as WinterIo;
 
 class WinterServer {
   static WinterServer get instance {
@@ -20,6 +28,7 @@ class WinterServer {
   final BuildContext context;
   final ServerConfig config;
   final WinterRouter router;
+  final ExceptionHandler exceptionHandler;
   final WinterDI di;
 
   late final HttpServer runningServer;
@@ -31,10 +40,12 @@ class WinterServer {
     BuildContext? context,
     ServerConfig? config,
     WinterRouter? router,
+    ExceptionHandler? exceptionHandler,
     WinterDI? di,
   })  : context = context ?? BuildContext(),
         config = config ?? ServerConfig(),
         router = router ?? SimpleWinterRouter(),
+        exceptionHandler = exceptionHandler ?? SimpleExceptionHandler(),
         di = di ?? WinterDI.instance;
 
   ///Start the web server with all the current config in this object
@@ -100,7 +111,7 @@ class WinterServer {
       await beforeStart();
     }
 
-    final handler = Pipeline().addMiddleware(logRequests()).addHandler(
+    /*final handler = Pipeline().addMiddleware(logRequests()).addHandler(
       (request) async {
         return (await router.call(
           await request.toEntity(),
@@ -109,12 +120,20 @@ class WinterServer {
       },
     );
 
-    runningServer = await serve(
+    runningServer = await ShelfIo.serve(
       handler,
       config.ip,
       config.port,
       poweredByHeader: 'Powered by winter-server',
+    );*/
+
+    runningServer = await WinterIo.serve(
+      (request) => router.call(request),
+      config.ip,
+      config.port,
+      allowBodyOnGetMethod: true,
     );
+
     _winterServer = this;
 
     if (afterStart != null) {

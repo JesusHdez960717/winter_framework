@@ -10,7 +10,7 @@
 ///
 /// This adapter supports request hijacking; see [Request.hijack].
 ///
-/// [Request]s passed to a [Handler] will contain the [Request.context] key
+/// [Request]s passed to a [RequestHandler] will contain the [Request.context] key
 /// `"shelf.io.connection_info"` containing the [HttpConnectionInfo] object from
 /// the underlying [HttpRequest].
 ///
@@ -22,7 +22,6 @@
 library;
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
@@ -50,20 +49,21 @@ void catchTopLevelErrors(void Function() callback,
 /// for more details on [address], [port], [backlog], and [shared].
 ///
 /// {@template shelf_io_header_defaults}
-/// Every response will get a "date" header and an "X-Powered-By" header.
+/// Every response will get a "date" header.
 /// If the either header is present in the `Response`, it will not be
 /// overwritten.
 /// Pass [poweredByHeader] to set the default content for "X-Powered-By",
 /// pass `null` to omit this header.
 /// {@endtemplate}
 Future<HttpServer> serve(
-  Handler handler,
+  RequestHandler handler,
   Object address,
   int port, {
+  ExcHandler? exceptionHandler,
   SecurityContext? securityContext,
   int? backlog,
   bool shared = false,
-  String? poweredByHeader = 'Dart with package:shelf',
+  bool allowBodyOnGetMethod = false,
 }) async {
   backlog ??= 0;
   var server = await (securityContext == null
@@ -75,32 +75,20 @@ Future<HttpServer> serve(
           backlog: backlog,
           shared: shared,
         ));
-  serveRequests(server, handler, poweredByHeader: poweredByHeader);
+  server.listen(
+    (request) => handleRequest(
+      request,
+      handler,
+      exceptionHandler ??
+          (request, error, stackTrace) => _logError(
+                request,
+                error.toString(),
+                stackTrace,
+              ),
+      allowBodyOnGetMethod: allowBodyOnGetMethod,
+    ),
+  );
   return server;
-}
-
-/// Serve a [Stream] of [HttpRequest]s.
-///
-/// [HttpServer] implements [Stream<HttpRequest>] so it can be passed directly
-/// to [serveRequests].
-///
-/// Errors thrown by [handler] while serving a request will be printed to the
-/// console and cause a 500 response with no body. Errors thrown asynchronously
-/// by [handler] will be printed to the console or, if there's an active error
-/// zone, passed to that zone.
-///
-/// {@macro shelf_io_header_defaults}
-void serveRequests(
-  Stream<HttpRequest> requests,
-  Handler handler, {
-  String? poweredByHeader = 'Dart with package:shelf',
-}) {
-  catchTopLevelErrors(() {
-    requests.listen((request) =>
-        handleRequest(request, handler, poweredByHeader: poweredByHeader));
-  }, (error, stackTrace) {
-    _logTopLevelError('Asynchronous error\n$error', stackTrace);
-  });
 }
 
 /// Uses [handler] to handle [request].
@@ -110,8 +98,9 @@ void serveRequests(
 /// {@macro shelf_io_header_defaults}
 Future<void> handleRequest(
   HttpRequest request,
-  Handler handler, {
-  String? poweredByHeader = 'Dart with package:shelf',
+  RequestHandler handler,
+  ExcHandler exceptionHandler, {
+  bool allowBodyOnGetMethod = false,
 }) async {
   HttpMethod? method = HttpMethod.valueOfOrNull(request.method);
   if (method == null) {
@@ -122,7 +111,7 @@ Future<void> handleRequest(
         HttpHeaders.CONTENT_TYPE: [MediaType.TEXT_PLAIN.mimeType],
       }),
     );
-    await _writeResponse(response, request.response, poweredByHeader);
+    await _writeResponse(response, request.response);
     return;
   }
 
@@ -132,7 +121,6 @@ Future<void> handleRequest(
     // ignore: avoid_catching_errors
   } on ArgumentError catch (error, stackTrace) {
     if (error.name == 'method' || error.name == 'requestedUri') {
-      // TODO: use a reduced log level when using package:logging
       _logTopLevelError('Error parsing request.\n$error', stackTrace);
       final response = ResponseEntity(
         status: HttpStatus.BAD_REQUEST,
@@ -141,47 +129,60 @@ Future<void> handleRequest(
           HttpHeaders.CONTENT_TYPE: [MediaType.TEXT_PLAIN.mimeType]
         }),
       );
-      await _writeResponse(response, request.response, poweredByHeader);
+      await _writeResponse(
+        response,
+        request.response,
+      );
     } else {
       _logTopLevelError('Error parsing request.\n$error', stackTrace);
       final response = ResponseEntity.internalServerError();
-      await _writeResponse(response, request.response, poweredByHeader);
+      await _writeResponse(
+        response,
+        request.response,
+      );
     }
     return;
   } catch (error, stackTrace) {
     _logTopLevelError('Error parsing request.\n$error', stackTrace);
     final response = ResponseEntity.internalServerError();
-    await _writeResponse(response, request.response, poweredByHeader);
+    await _writeResponse(
+      response,
+      request.response,
+    );
     return;
   }
 
   ResponseEntity? response;
-  try {
-    response = await handler(winterRequest);
-  } on Exception catch (error, stackTrace) {
-    response = _logError(
-      winterRequest,
-      'Error thrown by handler.\n$error',
-      stackTrace,
-    );
-  }
 
-  if ((response as dynamic) == null) {
-    // Handle nulls flowing from opt-out code
-    await _writeResponse(
-      _logError(
-        winterRequest,
-        'null response from handler.',
-        StackTrace.current,
-      ),
-      request.response,
-      poweredByHeader,
-    );
+  if (!allowBodyOnGetMethod &&
+      (method == HttpMethod.GET || method == HttpMethod.DELETE) &&
+      (await winterRequest.body())?.isNotEmpty == true) {
+    response = ResponseEntity.badRequest(
+        body: "Get & Delete methods can't have a body");
+    await _writeResponse(response, request.response);
     return;
   } else {
-    await _writeResponse(response, request.response, poweredByHeader);
-    return;
+    try {
+      response = await handler(winterRequest);
+    } on Exception catch (error, stackTrace) {
+      try {
+        response = await exceptionHandler(
+          winterRequest,
+          error,
+          stackTrace,
+        );
+      } on Exception catch (error, stackTrace) {
+        response = _logError(
+          winterRequest,
+          'Error thrown by handler.\n$error',
+          stackTrace,
+        );
+      }
+    }
   }
+
+  await _writeResponse(response, request.response);
+  return;
 }
 
 /// Creates a new [Request] from the provided [HttpRequest].
@@ -206,7 +207,6 @@ RequestEntity _fromHttpRequest(HttpRequest request) {
 Future<void> _writeResponse(
   ResponseEntity response,
   HttpResponse httpResponse,
-  String? poweredByHeader,
 ) {
   httpResponse.statusCode = response.status.value;
 
@@ -216,16 +216,12 @@ Future<void> _writeResponse(
   // necessary.
   httpResponse.headers.chunkedTransferEncoding = false;
 
-  response.headers.forEach((header, value) {
-    httpResponse.headers.set(header, value);
-  });
-
   var coding = response.headers.singleValues[HttpHeaders.TRANSFER_ENCODING];
   if (coding != null && !equalsIgnoreAsciiCase(coding, 'identity')) {
     // If the response is already in a chunked encoding, de-chunk it because
     // otherwise `dart:io` will try to add another layer of chunking.
     response = response.copyWith(
-      body: chunkedCoding.decoder.bind(response.body),
+      body: chunkedCoding.decoder.bind(response.rawRead),
     );
     httpResponse.headers.set(HttpHeaders.TRANSFER_ENCODING, 'chunked');
   } else if (response.status.value >= 200 &&
@@ -241,17 +237,20 @@ Future<void> _writeResponse(
     httpResponse.headers.date = DateTime.now().toUtc();
   }
 
+  response.headers.forEach((header, value) {
+    httpResponse.headers.set(header, value);
+  });
+
   return httpResponse
-      .addStream(_readBody(response))
+      .addStream(response.rawRead)
       .then((_) => httpResponse.close());
 }
 
-Stream<List<int>> _readBody(ResponseEntity response) => response.body is Stream
-    ? response.body
-    : Stream.fromIterable([utf8.encode(response.body.toString())]);
-
 ResponseEntity _logError(
-    RequestEntity request, String message, StackTrace stackTrace) {
+  RequestEntity request,
+  String message,
+  StackTrace stackTrace,
+) {
   // Add information about the request itself.
   var buffer = StringBuffer();
   buffer.write('${request.method} ${request.requestedUri.path}');

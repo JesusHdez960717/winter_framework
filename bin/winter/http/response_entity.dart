@@ -6,7 +6,7 @@ import 'http_entity.dart';
 import 'http_headers.dart';
 import 'http_status.dart';
 
-class ResponseEntity<T> extends HttpEntity<T> {
+class ResponseEntity extends HttpEntity {
   HttpStatus status;
 
   ResponseEntity({
@@ -17,7 +17,7 @@ class ResponseEntity<T> extends HttpEntity<T> {
 
   ResponseEntity.ok({
     HttpHeaders? headers,
-    T? body,
+    Object? body,
   }) : this(
           status: HttpStatus.OK,
           body: body,
@@ -26,10 +26,37 @@ class ResponseEntity<T> extends HttpEntity<T> {
 
   ResponseEntity.internalServerError({
     HttpHeaders? headers,
-    T? body,
+    Object? body,
   }) : this(
           status: HttpStatus.INTERNAL_SERVER_ERROR,
-          body: body ?? 'Internal Server Error' as T,
+          body: body ?? 'Internal Server Error',
+          headers: headers,
+        );
+
+  ResponseEntity.badRequest({
+    HttpHeaders? headers,
+    Object? body,
+  }) : this(
+          status: HttpStatus.BAD_REQUEST,
+          body: body ?? 'Bad Request',
+          headers: headers,
+        );
+
+  ResponseEntity.notFound({
+    HttpHeaders? headers,
+    Object? body,
+  }) : this(
+          status: HttpStatus.NOT_FOUND,
+          body: body ?? 'Not found',
+          headers: headers,
+        );
+
+  ResponseEntity.methodNotAllowed({
+    HttpHeaders? headers,
+    Object? body,
+  }) : this(
+          status: HttpStatus.METHOD_NOT_ALLOWED,
+          body: body ?? 'Method not allowed',
           headers: headers,
         );
 
@@ -54,7 +81,8 @@ class ResponseEntity<T> extends HttpEntity<T> {
   DateTime? get lastModified {
     if (_lastModifiedCache != null) return _lastModifiedCache;
     if (!headers.containsKey(HttpHeaders.LAST_MODIFIED)) return null;
-    _lastModifiedCache = parseHttpDate(headers.singleValues[HttpHeaders.LAST_MODIFIED]!);
+    _lastModifiedCache =
+        parseHttpDate(headers.singleValues[HttpHeaders.LAST_MODIFIED]!);
     return _lastModifiedCache;
   }
 
@@ -66,7 +94,8 @@ class ResponseEntity<T> extends HttpEntity<T> {
   int? get contentLength {
     if (_contentLengthCache != null) return _contentLengthCache;
     if (!headers.containsKey(HttpHeaders.CONTENT_LENGTH)) return null;
-    _contentLengthCache = int.parse(headers.singleValues[HttpHeaders.CONTENT_LENGTH]!);
+    _contentLengthCache =
+        int.parse(headers.singleValues[HttpHeaders.CONTENT_LENGTH]!);
     return _contentLengthCache;
   }
 

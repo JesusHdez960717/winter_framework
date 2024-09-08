@@ -5,9 +5,6 @@ import 'package:collection/collection.dart';
 import '../http/http.dart';
 import 'router/router.dart';
 
-typedef RequestHandler<In, Out> = FutureOr<ResponseEntity<Out>> Function(
-    RequestEntity<In> request);
-
 abstract class WinterRouter {
   Future<ResponseEntity> call(RequestEntity request);
 }
@@ -37,6 +34,7 @@ class SimpleWinterRouter extends WinterRouter {
     return _expandedRoutes ?? [];
   }
 
+  @override
   Future<ResponseEntity> call(RequestEntity request) async {
     //busco las rutas que coincidan con el path
     String urlPath = '/${request.url.path}';
@@ -48,7 +46,7 @@ class SimpleWinterRouter extends WinterRouter {
 
     //no hay ninguna: 404
     if (matchedRoutes.isEmpty) {
-      return notFoundResponse;
+      return ResponseEntity.notFound();
     } else {
       //hay alguna, reviso method
       WinterRoute? finalRoute = matchedRoutes.firstWhereOrNull(
@@ -56,7 +54,7 @@ class SimpleWinterRouter extends WinterRouter {
       );
       if (finalRoute == null) {
         //ninguna coincide con ese method
-        return methodNotAllowedResponse;
+        return ResponseEntity.methodNotAllowed();
       } else {
         request.setUpPathParams(finalRoute.path);
         return await finalRoute.invoke(request);

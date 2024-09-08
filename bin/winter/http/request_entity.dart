@@ -1,7 +1,7 @@
 import 'http_entity.dart';
 import 'http_method.dart';
 
-class RequestEntity<T> extends HttpEntity<T> {
+class RequestEntity extends HttpEntity {
   final Uri url;
 
   /// The original [Uri] for the request.

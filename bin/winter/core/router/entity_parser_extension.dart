@@ -5,7 +5,7 @@ import 'package:shelf/shelf.dart';
 import '../../http/http.dart';
 
 extension RequestExt on Request {
-  FutureOr<RequestEntity<T>> toEntity<T>() async {
+  FutureOr<RequestEntity> toEntity() async {
     return RequestEntity(
       method: HttpMethod.valueOf(method),
       headers: HttpHeaders.fromSingleValues(headers),
@@ -14,7 +14,7 @@ extension RequestExt on Request {
       handlerPath: handlerPath,
       protocolVersion: protocolVersion,
       body: contentLength != null
-          ? await readAsString() as T
+          ? await readAsString()
           : null, //TODO: 123456789 aplicar la conversion/mapeo
     );
   }

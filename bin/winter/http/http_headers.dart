@@ -3,6 +3,12 @@ import 'package:http_parser/http_parser.dart';
 
 final _emptyHeaders = HttpHeaders._empty();
 
+/// The default set of headers for a message created with no body and no
+/// explicit headers.
+final _defaultHeaders = HttpHeaders.from({
+  HttpHeaders.CONTENT_LENGTH: ['0'],
+});
+
 class HttpHeaders extends UnmodifiableMapView<String, List<String>> {
   /// The HTTP {@code Accept} header field name.
   /// @see <a href="https://tools.ietf.org/html/rfc7231#section-5.3.2">Section 5.3.2 of RFC 7231</a>
@@ -299,6 +305,7 @@ class HttpHeaders extends UnmodifiableMapView<String, List<String>> {
   HttpHeaders._empty() : super(const {});
 
   factory HttpHeaders.empty() => _emptyHeaders;
+  factory HttpHeaders.def() => _defaultHeaders;
 }
 
 /// Returns a [Map] with the values from [original] and the values from

@@ -4,7 +4,7 @@ import '../core.dart';
 class WinterRoute<In, Out> {
   final String path;
   final HttpMethod method;
-  final RequestHandler<In, Out> handler;
+  final RequestHandler handler;
 
   final List<WinterRoute> routes;
 
@@ -18,7 +18,7 @@ class WinterRoute<In, Out> {
   factory WinterRoute({
     required String path,
     required HttpMethod method,
-    required RequestHandler<In, Out> handler,
+    required RequestHandler handler,
     List<WinterRoute> routes = const [],
   }) {
     if (!path.startsWith('/')) {
@@ -54,7 +54,7 @@ class WinterRoute<In, Out> {
     return matchUrlPath != null;
   }
 
-  Future<ResponseEntity<Out>> invoke(RequestEntity<In> request) async {
+  Future<ResponseEntity> invoke(RequestEntity request) async {
     return await handler(request);
   }
 }
