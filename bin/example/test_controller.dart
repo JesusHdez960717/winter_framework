@@ -17,4 +17,9 @@ class TestController {
 
 class HiWorld {
   String? hi;
+
+  @override
+  String toString() {
+    return 'HiWorld{hi: $hi}';
+  }
 }

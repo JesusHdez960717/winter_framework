@@ -34,6 +34,7 @@ class HttpEntity {
   );
 
   Future<T?> body<T>() async {
+    //TODO: ver si se valida esto
     if (T != String &&
         headers.singleValues[HttpHeaders.CONTENT_TYPE] !=
             MediaType.APPLICATION_JSON.mimeType) {
@@ -68,6 +69,15 @@ class HttpEntity {
 
   List<String>? header(String header) => headers[header];
 
+  /// The parsed version of the Content-Type header in [headers].
+  ///
+  /// This is cached for efficient access.
+  MediaType? get contentType {
+    return headers[HttpHeaders.CONTENT_TYPE] != null
+        ? MediaType.parse(headers.singleValues[HttpHeaders.CONTENT_TYPE]!)
+        : _rawBody.contentType;
+  }
+
   /// The encoding of the message body.
   ///
   /// This is parsed from the "charset" parameter of the Content-Type header in
@@ -76,19 +86,10 @@ class HttpEntity {
   /// If [headers] doesn't have a Content-Type header or it specifies an
   /// encoding that `dart:convert` doesn't support, this will be `null`.
   Encoding? get encoding {
-    var contentType = _contentType;
-    if (contentType == null) return null;
-    if (!contentType.parameters.containsKey('charset')) return null;
-    return Encoding.getByName(contentType.parameters['charset']);
-  }
-
-  /// The parsed version of the Content-Type header in [headers].
-  ///
-  /// This is cached for efficient access.
-  MediaType? get _contentType {
-    return headers[HttpHeaders.CONTENT_TYPE] != null
-        ? MediaType.parse(headers.singleValues[HttpHeaders.CONTENT_TYPE]!)
-        : null;
+    var innerContentType = contentType;
+    if (innerContentType == null) return null;
+    if (!innerContentType.parameters.containsKey('charset')) return null;
+    return Encoding.getByName(innerContentType.parameters['charset']);
   }
 }
 
@@ -106,7 +107,9 @@ class _Body {
   /// determined efficiently.
   final int? contentLength;
 
-  _Body._(this._stream, this.encoding, this.contentLength);
+  final MediaType? contentType;
+
+  _Body._(this._stream, this.encoding, this.contentLength, this.contentType);
 
   /// Converts [body] to a byte stream and wraps it in a [Body].
   ///
@@ -118,6 +121,7 @@ class _Body {
 
     Stream<List<int>> stream;
     int? contentLength;
+    MediaType? contentType;
     if (body == null) {
       contentLength = 0;
       stream = Stream.fromIterable([]);
@@ -137,8 +141,10 @@ class _Body {
       late final String safeBody;
       if (body is String) {
         safeBody = body;
+        contentType = MediaType.TEXT_PLAIN;
       } else {
         safeBody = WinterServer.instance.context.objectMapper.serialize(body);
+        contentType = MediaType.APPLICATION_JSON;
       }
 
       if (encoding == null) {
@@ -155,7 +161,7 @@ class _Body {
       }
     }
 
-    return _Body._(stream, encoding, contentLength);
+    return _Body._(stream, encoding, contentLength, contentType);
   }
 
   /// Returns whether [bytes] is plain ASCII.
@@ -229,6 +235,9 @@ Map<String, List<String>> _adjustHeaders(
       newHeaders['content-length'] = [body.contentLength.toString()];
     }
   }
+
+  newHeaders[HttpHeaders.CONTENT_TYPE] =
+      headers?[HttpHeaders.CONTENT_TYPE] ?? [body.contentType!.mimeType];
 
   return newHeaders;
 }
