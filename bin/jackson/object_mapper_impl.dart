@@ -26,7 +26,8 @@ class ObjectMapperImpl extends ObjectMapper {
       cleanedUpObject = cleanUpObject(parsedObject);
     }
 
-    return jsonEncode(cleanedUpObject);
+    // Beautify the JSON with indentation
+    return JsonEncoder.withIndent('  ').convert(cleanedUpObject);
   }
 
   dynamic cleanUpObject(dynamic parsedObject) {
@@ -112,6 +113,9 @@ class ObjectMapperImpl extends ObjectMapper {
   // -------------------------- DESERIALIZE FUNCTION -------------------------- \\
   @override
   dynamic deserialize(String jsonString, Type targetType) {
+    if (targetType == String) {
+      return jsonString;
+    }
     dynamic jsonObject = jsonDecode(jsonString);
     return _fromMap(jsonObject, targetType);
   }

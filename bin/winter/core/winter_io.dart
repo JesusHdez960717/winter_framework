@@ -28,8 +28,8 @@ import 'package:collection/collection.dart';
 import 'package:http_parser/http_parser.dart' hide MediaType;
 import 'package:stack_trace/stack_trace.dart';
 
-import '../../http/http.dart';
-import '../core.dart';
+import '../http/http.dart';
+import 'core.dart';
 
 void catchTopLevelErrors(void Function() callback,
     void Function(dynamic error, StackTrace) onError) {

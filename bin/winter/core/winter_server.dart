@@ -1,18 +1,8 @@
-/*import 'dart:async';
-import 'dart:io';
-
-import 'package:shelf/shelf.dart';
-import 'package:shelf/shelf_io.dart' as ShelfIo;
-
-import 'inner/winter_io.dart' as WinterIo;
-
-import 'core.dart';
-import 'router/entity_parser_extension.dart';*/
 import 'dart:async';
 import 'dart:io';
 
 import 'core.dart';
-import 'inner/winter_io.dart' as WinterIo;
+import 'winter_io.dart' as WinterIo;
 
 class WinterServer {
   static WinterServer get instance {
@@ -29,7 +19,6 @@ class WinterServer {
   final ServerConfig config;
   final WinterRouter router;
   final ExceptionHandler exceptionHandler;
-  final WinterDI di;
 
   late final HttpServer runningServer;
 
@@ -45,8 +34,7 @@ class WinterServer {
   })  : context = context ?? BuildContext(),
         config = config ?? ServerConfig(),
         router = router ?? SimpleWinterRouter(),
-        exceptionHandler = exceptionHandler ?? SimpleExceptionHandler(),
-        di = di ?? WinterDI.instance;
+        exceptionHandler = exceptionHandler ?? SimpleExceptionHandler();
 
   ///Start the web server with all the current config in this object
   ///beforeStart:
@@ -111,24 +99,13 @@ class WinterServer {
       await beforeStart();
     }
 
-    /*final handler = Pipeline().addMiddleware(logRequests()).addHandler(
-      (request) async {
-        return (await router.call(
-          await request.toEntity(),
-        ))
-            .toResponse();
-      },
-    );
-
-    runningServer = await ShelfIo.serve(
-      handler,
-      config.ip,
-      config.port,
-      poweredByHeader: 'Powered by winter-server',
-    );*/
-
     runningServer = await WinterIo.serve(
       (request) => router.call(request),
+      exceptionHandler: (request, error, stackTrac) => exceptionHandler.call(
+        request,
+        error,
+        stackTrac,
+      ),
       config.ip,
       config.port,
       allowBodyOnGetMethod: true,

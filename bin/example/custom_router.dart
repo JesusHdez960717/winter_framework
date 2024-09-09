@@ -1,4 +1,5 @@
 import '../winter/winter.dart';
+import 'test_controller.dart';
 
 class CustomRouter {
   static SimpleWinterRouter router = SimpleWinterRouter(
@@ -6,18 +7,12 @@ class CustomRouter {
       onInvalidUrl: OnInvalidUrl.fail(),
     ),
     routes: [
-      WinterRoute(
-        path: '/hw1',
-        method: HttpMethod.GET,
-        handler: (request) => ResponseEntity.ok(
-          body: WinterDI.instance.find<String>(tag: 'hello-world'),
-        ),
-      ),
+      TestController.hw1,
       WinterRoute(
         path: '/hw2',
         method: HttpMethod.GET,
         handler: (request) => ResponseEntity.ok(
-          body: WinterServer.instance.di.find<String>(tag: 'hello-world'),
+          body: WinterServer.instance.context.di.find<String>(tag: 'hello-world'),
         ),
       ),
       WinterRoute(

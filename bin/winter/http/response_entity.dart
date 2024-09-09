@@ -113,20 +113,6 @@ class ResponseEntity extends HttpEntity {
     return contentType.mimeType;
   }
 
-  /// The encoding of the message body.
-  ///
-  /// This is parsed from the "charset" parameter of the Content-Type header in
-  /// [headers].
-  ///
-  /// If [headers] doesn't have a Content-Type header or it specifies an
-  /// encoding that `dart:convert` doesn't support, this will be `null`.
-  Encoding? get encoding {
-    var contentType = _contentType;
-    if (contentType == null) return null;
-    if (!contentType.parameters.containsKey('charset')) return null;
-    return Encoding.getByName(contentType.parameters['charset']);
-  }
-
   /// The parsed version of the Content-Type header in [headers].
   ///
   /// This is cached for efficient access.

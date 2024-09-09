@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:http_parser/http_parser.dart' hide MediaType;
 
+import '../core/winter_server.dart';
 import 'http_headers.dart';
 import 'media_type.dart';
 
@@ -32,12 +33,24 @@ class HttpEntity {
     this.headers,
   );
 
-  //TODO: do parse to type T
-  Future<String?> body() async {
-    return _cachedBody ??= await _readAsString(encoding);
+  Future<T?> body<T>() async {
+    if (T != String &&
+        headers.singleValues[HttpHeaders.CONTENT_TYPE] !=
+            MediaType.APPLICATION_JSON.mimeType) {
+      print(
+          'Se quiere parsear un body que no tiene content-type de tipo application/json');
+    }
+
+    if (_cachedBody == null || _cachedBody is! T) {
+      _cachedBody = WinterServer.instance.context.objectMapper.deserialize(
+        await _readAsString(encoding),
+        T,
+      );
+    }
+    return _cachedBody as T;
   }
 
-  String? _cachedBody;
+  Object? _cachedBody;
 
   /// Returns a [Future] containing the body as a String.
   ///
@@ -108,19 +121,6 @@ class _Body {
     if (body == null) {
       contentLength = 0;
       stream = Stream.fromIterable([]);
-    } else if (body is String) {
-      if (encoding == null) {
-        var encoded = utf8.encode(body);
-        // If the text is plain ASCII, don't modify the encoding. This means
-        // that an encoding of "text/plain" will stay put.
-        if (!_isPlainAscii(encoded, body.length)) encoding = utf8;
-        contentLength = encoded.length;
-        stream = Stream.fromIterable([encoded]);
-      } else {
-        var encoded = encoding.encode(body);
-        contentLength = encoded.length;
-        stream = Stream.fromIterable([encoded]);
-      }
     } else if (body is List<int>) {
       // Avoid performance overhead from an unnecessary cast.
       contentLength = body.length;
@@ -134,8 +134,25 @@ class _Body {
     } else if (body is Stream) {
       stream = body.cast();
     } else {
-      throw ArgumentError('Response body "$body" must be a String or a '
-          'Stream.');
+      late final String safeBody;
+      if (body is String) {
+        safeBody = body;
+      } else {
+        safeBody = WinterServer.instance.context.objectMapper.serialize(body);
+      }
+
+      if (encoding == null) {
+        var encoded = utf8.encode(safeBody);
+        // If the text is plain ASCII, don't modify the encoding. This means
+        // that an encoding of "text/plain" will stay put.
+        if (!_isPlainAscii(encoded, safeBody.length)) encoding = utf8;
+        contentLength = encoded.length;
+        stream = Stream.fromIterable([encoded]);
+      } else {
+        var encoded = encoding.encode(safeBody);
+        contentLength = encoded.length;
+        stream = Stream.fromIterable([encoded]);
+      }
     }
 
     return _Body._(stream, encoding, contentLength);

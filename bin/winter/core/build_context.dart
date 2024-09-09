@@ -1,11 +1,14 @@
 import '../../jackson/object_mapper_impl.dart';
 import 'object_mapper.dart';
+import 'winter_di.dart';
 
 class BuildContext {
   ///Storage when was this context created
   final DateTime timestamp;
 
   final ObjectMapper objectMapper;
+
+  final WinterDI di;
 
   static BuildContext _singleton = BuildContext._internal();
 
@@ -22,5 +25,6 @@ class BuildContext {
 
   BuildContext._internal()
       : timestamp = DateTime.now(),
-        objectMapper = ObjectMapperImpl();
+        objectMapper = ObjectMapperImpl(),
+        di = WinterDI.instance;
 }

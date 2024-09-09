@@ -56,7 +56,7 @@ void main() async {
   Map<String, int> map2 = parser.deserialize(jsonString, Map<String, int>).cast<String, int>();
   print(map2.toString());*/
 
-  ObjectMapperImpl parser =
+  /*ObjectMapperImpl parser =
       ObjectMapperImpl(namingStrategy: NamingStrategies.snakeCase);
   Map<String, User> map = {
     "123": User.named(userName: "123"),
@@ -69,7 +69,7 @@ void main() async {
 
   Map<String, User> map2 =
       parser.deserialize(jsonString, Map<String, User>).cast<String, User>();
-  print(map2.toString());
+  print(map2.toString());*/
 }
 
 class Address {

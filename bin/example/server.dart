@@ -7,7 +7,7 @@ void main() async {
 
   WinterServer runningServer = await WinterServer(
     config: ServerConfig(port: 9090),
-    exceptionHandler: CustomExceptionHandler(),
+    exceptionHandler: CustomExceptionHandler.exceptionHandler,
     router: CustomRouter.router,
   ).start(
     afterStart: () async {
