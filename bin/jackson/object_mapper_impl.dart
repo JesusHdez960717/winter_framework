@@ -6,11 +6,39 @@ import 'package:collection/collection.dart'; // needed firstWhereOrNull. You hav
 import '../winter/core/object_mapper.dart';
 
 class ObjectMapperImpl extends ObjectMapper {
+  Map<Type, ToJsonParserFunction> defaultSerializer = {
+    DateTime: (dynamic object) => (object as DateTime).toIso8601String(),
+    Duration: (dynamic object) => (object as Duration).inMilliseconds,
+    Uri: (dynamic object) => (object as Uri).toString(),
+    RegExp: (dynamic object) => (object as RegExp).pattern,
+    String: (dynamic object) => (object as String),
+    num: (dynamic object) => (object as num),
+    int: (dynamic object) => (object as int),
+    double: (dynamic object) => (object as double),
+    bool: (dynamic object) => (object as bool),
+  };
+
+  Map<Type, FromJsonParserFunction> defaultDeserializer = {
+    DateTime: (dynamic value) => DateTime.parse(value),
+    Duration: (dynamic value) => Duration(milliseconds: int.parse(value)),
+    Uri: (dynamic value) => Uri.parse(value),
+    RegExp: (dynamic value) => RegExp(value),
+    String: (dynamic value) => value as String,
+    num: (dynamic value) => num.parse(value),
+    int: (dynamic value) => int.parse(value),
+    double: (dynamic value) => double.parse(value),
+    bool: (dynamic value) => bool.parse(value),
+  };
+
   ObjectMapperImpl({
     super.namingStrategy,
-    super.defaultToJsonParser,
-    super.defaultFromJsonParser,
-  });
+    Map<Type, ToJsonParserFunction>? defaultSerializerOverride,
+    Map<Type, FromJsonParserFunction>? defaultDeserializerOverride,
+    super.prettyPrint,
+  }) {
+    defaultSerializer.addAll(defaultSerializerOverride ?? {});
+    defaultDeserializer.addAll(defaultDeserializerOverride ?? {});
+  }
 
   @override
   String serialize(dynamic object, {bool cleanUp = false}) {
@@ -27,7 +55,11 @@ class ObjectMapperImpl extends ObjectMapper {
     }
 
     // Beautify the JSON with indentation
-    return JsonEncoder.withIndent('  ').convert(cleanedUpObject);
+    if (prettyPrint) {
+      return JsonEncoder.withIndent('  ').convert(cleanedUpObject);
+    } else {
+      return jsonEncode(cleanedUpObject);
+    }
   }
 
   dynamic cleanUpObject(dynamic parsedObject) {
@@ -56,8 +88,14 @@ class ObjectMapperImpl extends ObjectMapper {
     } else if (object is Map) {
       return object
           .map((key, val) => MapEntry(_toMap(key, seen), _toMap(val, seen)));
-    } else if (defaultToJsonParser.containsKey(object.runtimeType)) {
-      return defaultToJsonParser[object.runtimeType]!(object);
+    } else if (defaultSerializer.containsKey(object.runtimeType)) {
+      return defaultSerializer[object.runtimeType]!(object);
+    } else if (object is Uri) {
+      //URI has subclases that actually make the object, this way the search needs to be manual
+      return defaultSerializer[Uri]!(object);
+    } else if (object is RegExp) {
+      //Same as Uri
+      return defaultSerializer[RegExp]!(object);
     } else {
       seen.add(object);
 
@@ -113,8 +151,8 @@ class ObjectMapperImpl extends ObjectMapper {
   // -------------------------- DESERIALIZE FUNCTION -------------------------- \\
   @override
   dynamic deserialize(String jsonString, Type targetType) {
-    if (targetType == String) {
-      return jsonString;
+    if (defaultDeserializer.containsKey(targetType)) {
+      return defaultDeserializer[targetType]!(jsonString);
     }
     dynamic jsonObject = jsonDecode(jsonString);
     return _fromMap(jsonObject, targetType);
@@ -122,6 +160,9 @@ class ObjectMapperImpl extends ObjectMapper {
 
   dynamic _fromMap(dynamic json, Type targetType) {
     if (json == null) return null;
+    if (targetType.toString().startsWith('dynamic')) {
+      return json;
+    }
 
     if (json is List) {
       ClassMirror classMirror = reflectType(targetType) as ClassMirror;
@@ -129,9 +170,23 @@ class ObjectMapperImpl extends ObjectMapper {
       Type subType = paramTypeMirror.reflectedType;
 
       return json.map((item) => _fromMap(item, subType)).toList();
-    } else if (defaultFromJsonParser.containsKey(targetType)) {
-      return defaultFromJsonParser[targetType]!(json);
+    } else if (defaultDeserializer.containsKey(targetType)) {
+      return defaultDeserializer[targetType]!(json);
+    } else if (targetType is Uri) {
+      //URI has subclases that actually make the object, this way the search needs to be manual
+      return defaultDeserializer[Uri]!(json);
+    } else if (targetType is RegExp) {
+      //Same as Uri
+      return defaultDeserializer[RegExp]!(json);
     } else if (json is Map) {
+      if (targetType.toString().startsWith('Map')) {
+        Type keyType = reflectType(targetType).typeArguments[0].reflectedType;
+        Type valueType = reflectType(targetType).typeArguments[1].reflectedType;
+
+        return json.map((key, value) =>
+            MapEntry(_fromMap(key, keyType), _fromMap(value, valueType)));
+      }
+
       var classMirror = reflectClass(targetType);
       var instanceMirror = classMirror.newInstance(Symbol(''), []);
 
@@ -148,9 +203,6 @@ class ObjectMapperImpl extends ObjectMapper {
             if (parserFunction != null) {
               fieldValue = parserFunction(fieldValue);
             } else {
-              if (fieldValue is Map) {
-                //TODO
-              } else {}
               fieldValue = _fromMap(fieldValue, declaration.type.reflectedType);
             }
 

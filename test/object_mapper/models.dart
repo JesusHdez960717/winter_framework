@@ -1,43 +1,4 @@
-import '../winter/winter.dart';
-import 'object_mapper_impl.dart';
-
-void main() async {
-  Address address1 = Address.named(streetName: 'Main Street', houseNumber: 123);
-  Address address2 =
-      Address.named(streetName: 'Second Street', houseNumber: 456);
-  Address singleAddress = Address.named(streetName: 'Single', houseNumber: 111);
-
-  // Crear un mapa de atributos adicionales
-  Map<String, dynamic> additionalAttributes = {
-    'nickname': 'JD',
-    'preferences': {'newsletter': true, 'sms': false},
-    'list': ['monday', 'weekend']
-  };
-
-  // Crear una instancia de User con una lista de direcciones y un mapa de atributos adicionales
-  User user = User.named(
-    userName: 'User name',
-    userId: 42,
-    isActive: true,
-    addresses: [address1, address2],
-    duration: Duration(days: 2),
-    singleAddress: singleAddress,
-    additionalAttributes: additionalAttributes,
-  );
-
-  ObjectMapperImpl parser =
-      ObjectMapperImpl(namingStrategy: NamingStrategies.snakeCase);
-
-  String jsonString = parser.serialize(user);
-  print(jsonString);
-
-  print('---------------------------------------------------');
-
-  User user2 = parser.deserialize(jsonString, User);
-  print(user2.toString());
-
-  print(user == user2);
-}
+import '../../bin/winter/core/core.dart';
 
 class Address {
   String? streetName;

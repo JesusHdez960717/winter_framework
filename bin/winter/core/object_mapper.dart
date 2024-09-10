@@ -68,39 +68,13 @@ Map<K, V> mapCaster<K, V>(Map map) => map.cast<K, V>();
 
 abstract class ObjectMapper {
   late final NamingStrategy namingStrategy;
-  Map<Type, ToJsonParserFunction> defaultToJsonParser = {
-    DateTime: (dynamic object) => (object as DateTime).toIso8601String(),
-    Duration: (dynamic object) => (object as Duration).inMilliseconds,
-    Uri: (dynamic object) => (object as Uri).toString(),
-    RegExp: (dynamic object) => (object as RegExp).pattern,
-    String: (dynamic object) => (object as String),
-    num: (dynamic object) => (object as num),
-    int: (dynamic object) => (object as int),
-    double: (dynamic object) => (object as double),
-    bool: (dynamic object) => (object as bool),
-  };
-
-  Map<Type, FromJsonParserFunction> defaultFromJsonParser = {
-    DateTime: (dynamic value) => DateTime.parse(value),
-    Duration: (dynamic value) => Duration(milliseconds: value),
-    Uri: (dynamic value) => Uri.parse(value),
-    RegExp: (dynamic value) => RegExp(value),
-    String: (dynamic value) => value as String,
-    num: (dynamic value) => value as num,
-    int: (dynamic value) => value as int,
-    double: (dynamic value) => value as double,
-    bool: (dynamic value) => value as bool,
-  };
+  late final bool prettyPrint;
 
   ObjectMapper({
     NamingStrategy? namingStrategy,
-    Map<Type, ToJsonParserFunction>? defaultToJsonParser,
-    Map<Type, FromJsonParserFunction>? defaultFromJsonParser,
+    this.prettyPrint = true,
   }) {
     this.namingStrategy = namingStrategy ?? NamingStrategies.basic;
-
-    this.defaultToJsonParser.addAll(defaultToJsonParser ?? {});
-    this.defaultFromJsonParser.addAll(defaultFromJsonParser ?? {});
   }
 
   String serialize(dynamic object, {bool cleanUp = false});
