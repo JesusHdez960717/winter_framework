@@ -19,15 +19,15 @@ class ObjectMapperImpl extends ObjectMapper {
   };
 
   Map<Type, FromJsonParserFunction> defaultDeserializer = {
-    DateTime: (dynamic value) => DateTime.parse(value),
-    Duration: (dynamic value) => Duration(milliseconds: int.parse(value)),
-    Uri: (dynamic value) => Uri.parse(value),
-    RegExp: (dynamic value) => RegExp(value),
+    DateTime: (dynamic value) => DateTime.parse(value.toString()),
+    Duration: (dynamic value) => Duration(milliseconds: int.parse(value.toString())),
+    Uri: (dynamic value) => Uri.parse(value.toString()),
+    RegExp: (dynamic value) => RegExp(value.toString()),
     String: (dynamic value) => value as String,
-    num: (dynamic value) => num.parse(value),
-    int: (dynamic value) => int.parse(value),
-    double: (dynamic value) => double.parse(value),
-    bool: (dynamic value) => bool.parse(value),
+    num: (dynamic value) => num.parse(value.toString()),
+    int: (dynamic value) => int.parse(value.toString()),
+    double: (dynamic value) => double.parse(value.toString()),
+    bool: (dynamic value) => bool.parse(value.toString()),
   };
 
   ObjectMapperImpl({

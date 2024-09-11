@@ -31,30 +31,292 @@ void main() {
     expect(jsonString, result);
   });
 
-  test('Serialize - List<String>', () async {
-    ObjectMapperImpl parser = ObjectMapperImpl(
-      namingStrategy: NamingStrategies.snakeCase,
-      prettyPrint: false,
-    );
-
-    List<String> object = ["John", '30', "active"];
-    String result = '["John","30","active"]';
+  //---------- Lists ----------\\
+  test('Serialize/Deserialize - List<dynamic>', () async {
+    List<dynamic> object = ["John", 30, "active"];
+    String expectedString = '["John",30,"active"]';
     String jsonString = parser.serialize(object);
 
-    expect(jsonString, result);
+    expect(expectedString, jsonString);
+
+    List<dynamic> deserialized = parser.deserialize(jsonString, List);
+    expect(deserialized, object);
   });
 
-  test('Serialize - List<dynamic>', () async {
-    ObjectMapperImpl parser = ObjectMapperImpl(
-      namingStrategy: NamingStrategies.snakeCase,
+  test('Serialize/Deserialize - List<DateTime>', () async {
+    List<DateTime> object = [
+      DateTime(2023, 9, 1),
+      DateTime(2024, 1, 1),
+      DateTime(2025, 12, 31)
+    ];
+    String expectedResult =
+        '["2023-09-01T00:00:00.000","2024-01-01T00:00:00.000","2025-12-31T00:00:00.000"]';
+    String jsonString = parser.serialize(object);
+
+    expect(expectedResult, jsonString);
+
+    List<DateTime> deserialized =
+        parser.deserialize(jsonString, List<DateTime>).cast<DateTime>();
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - List<DateTime> (Custom Parser)', () async {
+    ObjectMapperImpl customParser = ObjectMapperImpl(
+      defaultSerializerOverride: {
+        DateTime: (dynamic object) =>
+            (object as DateTime).millisecondsSinceEpoch,
+      },
+      defaultDeserializerOverride: {
+        DateTime: (dynamic value) => DateTime.fromMillisecondsSinceEpoch(value),
+      },
       prettyPrint: false,
     );
 
-    List<dynamic> object = ["John", 30, "active"];
-    String result = '["John",30,"active"]';
+    List<DateTime> object = [
+      DateTime(2023, 9, 1),
+      DateTime(2024, 1, 1),
+      DateTime(2025, 12, 31)
+    ];
+
+    String jsonString = customParser.serialize(object);
+
+    // Convert the list of DateTimes to a list of their millisecondsSinceEpoch
+    String expectedSerializedResult =
+        '[${object[0].millisecondsSinceEpoch},${object[1].millisecondsSinceEpoch},${object[2].millisecondsSinceEpoch}]';
+    expect(jsonString, expectedSerializedResult);
+
+    List<DateTime> deserialized =
+        customParser.deserialize(jsonString, List<DateTime>).cast<DateTime>();
+    expect(deserialized.map((d) => d.millisecondsSinceEpoch).toList(),
+        object.map((d) => d.millisecondsSinceEpoch).toList());
+  });
+
+  test('Serialize/Deserialize - List<Duration>', () async {
+    List<Duration> object = [
+      Duration(days: 1, hours: 5, minutes: 30),
+      Duration(hours: 10, minutes: 45),
+      Duration(seconds: 90)
+    ];
+
+    List<String> expectedResult =
+        object.map((d) => d.inMilliseconds.toString()).toList();
     String jsonString = parser.serialize(object);
 
-    expect(jsonString, result);
+    expect(jsonString, '[${expectedResult.join(",")}]');
+
+    List<Duration> deserialized =
+        parser.deserialize(jsonString, List<Duration>).cast<Duration>();
+
+    expect(deserialized.map((d) => d.inMilliseconds).toList(),
+        object.map((d) => d.inMilliseconds).toList());
+  });
+
+  test('Serialize/Deserialize - List<Duration> (Custom Parser)', () async {
+    ObjectMapperImpl customParser =
+        ObjectMapperImpl(defaultSerializerOverride: {
+      Duration: (dynamic object) => (object as Duration).toString(),
+    }, defaultDeserializerOverride: {
+      Duration: (dynamic value) {
+        List<String> parts = (value as String).split(".");
+
+        // Obtiene la parte de horas, minutos, segundos
+        List<String> timeParts = parts[0].split(":");
+        int hours = int.parse(timeParts[0]);
+        int minutes = int.parse(timeParts[1]);
+        int seconds = int.parse(timeParts[2]);
+
+        // Obtiene la parte de milisegundos si existe
+        int milliseconds = parts.length > 1 ? int.parse(parts[1]) : 0;
+
+        return Duration(
+          hours: hours,
+          minutes: minutes,
+          seconds: seconds,
+          milliseconds: milliseconds ~/ 1000,
+        );
+      },
+    }, prettyPrint: false);
+
+    List<Duration> object = [
+      Duration(days: 1, hours: 5, minutes: 30),
+      Duration(hours: 10, minutes: 45),
+      Duration(seconds: 90)
+    ];
+
+    // Serializa las duraciones en el formato "hh:mm:ss.mmm"
+    List<String> expectedSerializedResult =
+        object.map((d) => d.toString()).toList();
+    String jsonString = customParser.serialize(object);
+
+    expect(jsonString,
+        '[${expectedSerializedResult.map((e) => '"$e"').join(",")}]');
+
+    List<Duration> deserialized =
+        customParser.deserialize(jsonString, List<Duration>).cast<Duration>();
+    expect(deserialized.map((d) => d.inMilliseconds).toList(),
+        object.map((d) => d.inMilliseconds).toList());
+  });
+
+  //TODO: URI & REGEX
+  test('Serialize - List<String>', () async {
+    List<String> object = ["John", '30', "active"];
+    String expectedResult = '["John","30","active"]';
+    String jsonString = parser.serialize(object);
+
+    expect(expectedResult, jsonString);
+
+    List<String> deserialized =
+        parser.deserialize(jsonString, List<String>).cast<String>();
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - List<String> (Custom Parser)', () async {
+    ObjectMapperImpl customParser = ObjectMapperImpl(
+      defaultSerializerOverride: {
+        String: (dynamic object) => object.toString().toUpperCase(),
+      },
+      defaultDeserializerOverride: {
+        String: (dynamic value) => value.toString().toLowerCase(),
+      },
+      prettyPrint: false,
+    );
+
+    List<String> object = ["hello", "world"];
+    String expectedResult = '["HELLO","WORLD"]';
+    String jsonString = customParser.serialize(object);
+
+    expect(expectedResult, jsonString);
+
+    List<String> deserialized =
+        customParser.deserialize(jsonString, List<String>).cast<String>();
+    expect(deserialized, object.map((e) => e.toLowerCase()).toList());
+  });
+
+  test('Serialize/Deserialize - List<num>', () async {
+    List<num> object = [1, 2.5, 3, 4.75];
+    String expectedResult = '[1,2.5,3,4.75]';
+    String jsonString = parser.serialize(object);
+
+    expect(expectedResult, jsonString);
+
+    List<num> deserialized = parser.deserialize(jsonString, List).cast<num>();
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - List<num> (Custom Parser)', () async {
+    ObjectMapperImpl customParser =
+        ObjectMapperImpl(defaultSerializerOverride: {
+      num: (dynamic object) => object.toString(),
+    }, defaultDeserializerOverride: {
+      num: (dynamic value) => num.parse(value),
+    }, prettyPrint: false);
+
+    List<num> object = [123, 456.78, -90.12, 0];
+
+    List<String> expectedSerializedResult =
+        object.map((n) => n.toString()).toList();
+    String jsonString = customParser.serialize(object);
+
+    expect(jsonString, '[${expectedSerializedResult.join(",")}]');
+
+    List<num> deserialized =
+        customParser.deserialize(jsonString, List).cast<num>();
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - List<int>', () async {
+    List<int> object = [1, 2, 3, 4, 5];
+    String expectedResult = '[1,2,3,4,5]';
+    String jsonString = parser.serialize(object);
+
+    expect(expectedResult, jsonString);
+
+    List<int> deserialized =
+        parser.deserialize(jsonString, List<int>).cast<int>();
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - List<int> (Custom Parser)', () async {
+    ObjectMapperImpl customParser = ObjectMapperImpl(
+      defaultSerializerOverride: {
+        int: (dynamic object) => (object as int).toString(),
+      },
+      defaultDeserializerOverride: {
+        int: (dynamic value) => int.parse(value),
+      },
+      prettyPrint: false,
+    );
+
+    List<int> object = [42, 100, 5];
+    String jsonString = customParser.serialize(object);
+
+    List<int> deserialized =
+        customParser.deserialize(jsonString, List<int>).cast<int>();
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - List<double>', () async {
+    List<double> object = [1.1, 2.2, 3.3, 4.4, 5.5];
+    String expectedResult = '[1.1,2.2,3.3,4.4,5.5]';
+    String jsonString = parser.serialize(object);
+
+    expect(expectedResult, jsonString);
+
+    List<double> deserialized =
+        parser.deserialize(jsonString, List<double>).cast<double>();
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - List<double> (Custom Parser)', () async {
+    ObjectMapperImpl customParser = ObjectMapperImpl(
+      defaultSerializerOverride: {
+        double: (dynamic object) => (object as double).toStringAsFixed(5),
+      },
+      defaultDeserializerOverride: {
+        double: (dynamic value) => double.parse(value),
+      },
+      prettyPrint: false,
+    );
+
+    List<double> object = [42.42, 100.99, 3.14159];
+    String jsonString = customParser.serialize(object);
+
+    List<double> deserialized =
+        customParser.deserialize(jsonString, List<double>).cast<double>();
+    expect(deserialized, object);
+  });
+  test('Serialize/Deserialize - List<bool>', () async {
+    List<bool> object = [true, false, true, true];
+    String expectedResult = '[true,false,true,true]';
+    String jsonString = parser.serialize(object);
+
+    expect(expectedResult, jsonString);
+
+    List<bool> deserialized =
+        parser.deserialize(jsonString, List<bool>).cast<bool>();
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - List<bool> (Custom Parser)', () async {
+    ObjectMapperImpl customParser = ObjectMapperImpl(
+      defaultSerializerOverride: {
+        bool: (dynamic object) => (object as bool) ? "yes" : "no",
+      },
+      defaultDeserializerOverride: {
+        bool: (dynamic value) => value == "yes",
+      },
+      prettyPrint: false,
+    );
+
+    List<bool> object = [true, false, true];
+    String expectedString = '["yes","no","yes"]';
+    String jsonString = customParser.serialize(object);
+
+    expect(expectedString, jsonString);
+
+    List<bool> deserialized =
+        customParser.deserialize(jsonString, List<bool>).cast<bool>();
+    expect(deserialized, object);
   });
 
   //---------- Single types ----------\\
@@ -73,7 +335,7 @@ void main() {
     ObjectMapperImpl customParser = ObjectMapperImpl(
       defaultSerializerOverride: {
         DateTime: (dynamic object) =>
-        (object as DateTime).millisecondsSinceEpoch,
+            (object as DateTime).millisecondsSinceEpoch,
       },
       defaultDeserializerOverride: {
         DateTime: (dynamic value) =>
@@ -88,7 +350,7 @@ void main() {
     expect(expectedString, jsonString);
 
     DateTime deserializedObject =
-    customParser.deserialize(jsonString, DateTime);
+        customParser.deserialize(jsonString, DateTime);
 
     expect(deserializedObject.millisecondsSinceEpoch,
         object.millisecondsSinceEpoch);
