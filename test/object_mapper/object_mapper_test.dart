@@ -88,6 +88,76 @@ void main() {
   });
 
   //---------- Object via Serializable----------\\
+
+  //---------- Object via Annotation----------\\
+  test('Serialize/Deserialize - Computer', () async {
+    Computer object = Computer.named(brand: 'hp');
+
+    String expectedResult = '{"brand":"HP"}';
+
+    String jsonString = parser.serialize(object);
+    expect(expectedResult, jsonString);
+
+    Computer deserialized =
+        parser.deserialize(jsonString, Computer) as Computer;
+
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - List<Computer>', () async {
+    List<Computer> object = [
+      Computer.named(brand: 'hp'),
+      Computer.named(brand: 'gateway'),
+      Computer.named(brand: 'mac')
+    ];
+
+    String expectedResult =
+        '[{"brand":"HP"},{"brand":"GATEWAY"},{"brand":"MAC"}]';
+
+    String jsonString = parser.serialize(object);
+    expect(expectedResult, jsonString);
+
+    List<Computer> deserialized =
+        parser.deserialize(jsonString, List<Computer>).cast<Computer>();
+
+    expect(deserialized, object);
+  });
+  //---------- Object via Annotation----------\\
+
+  //---------- Field Name via Annotation----------\\
+  test('Serialize/Deserialize - Mouse', () async {
+    Mouse object = Mouse.named(brand: 'Logitech');
+
+    String expectedResult = '{"mouse_brand":"Logitech"}';
+
+    String jsonString = parser.serialize(object);
+    expect(expectedResult, jsonString);
+
+    Mouse deserialized =
+        parser.deserialize(jsonString, Mouse) as Mouse;
+
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - List<Mouse>', () async {
+    List<Mouse> object = [
+      Mouse.named(brand: 'Logitech'),
+      Mouse.named(brand: 'Gamer'),
+      Mouse.named(brand: 'iMouse')
+    ];
+
+    String expectedResult =
+        '[{"mouse_brand":"Logitech"},{"mouse_brand":"Gamer"},{"mouse_brand":"iMouse"}]';
+
+    String jsonString = parser.serialize(object);
+    expect(expectedResult, jsonString);
+
+    List<Mouse> deserialized =
+        parser.deserialize(jsonString, List<Mouse>).cast<Mouse>();
+
+    expect(deserialized, object);
+  });
+  //---------- Field Name via Annotation----------\\
   //---------- Object via Mirrors----------\\
   test('Serialize/Deserialize - Address', () async {
     Address object = Address.named(

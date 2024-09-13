@@ -1,5 +1,6 @@
 import '../../bin/winter/core/core.dart';
 
+//----------------------
 class Tool implements WinterSerializer, WinterDeserializable {
   String name;
 
@@ -32,6 +33,55 @@ class Tool implements WinterSerializer, WinterDeserializable {
   int get hashCode => name.hashCode;
 }
 
+//----------------------
+String _propertyToString(dynamic property) =>
+    (property as String).toUpperCase();
+
+String _propertyFromJson(dynamic property) =>
+    (property as String).toLowerCase();
+
+//Tiene que tener el Computer();
+class Computer {
+  @ToJsonParser(_propertyToString)
+  @FromJsonParser(_propertyFromJson)
+  String? brand;
+
+  Computer();
+
+  Computer.named({required this.brand});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Computer &&
+          runtimeType == other.runtimeType &&
+          brand == other.brand;
+
+  @override
+  int get hashCode => brand.hashCode;
+}
+
+//----------------------
+class Mouse {
+  @JsonProperty('mouse_brand')
+  String? brand;
+
+  Mouse();
+
+  Mouse.named({required this.brand});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Mouse &&
+          runtimeType == other.runtimeType &&
+          brand == other.brand;
+
+  @override
+  int get hashCode => brand.hashCode;
+}
+
+//----------------------
 class Address {
   String? streetName;
   int? houseNumber;
