@@ -2,6 +2,7 @@ import 'package:test/test.dart';
 
 import '../../bin/jackson/object_mapper_impl.dart';
 import '../../bin/winter/winter.dart';
+import 'models.dart';
 
 late ObjectMapper parser;
 
@@ -15,6 +16,200 @@ void main() {
     );
   });
 
+  //---------- Utils ----------\\
+  String removeIndentation(String input) {
+    // Expresión regular para eliminar espacios fuera de las comillas
+    return input.replaceAllMapped(RegExp(r'("(?:\\.|[^"\\])*")|\s+'), (match) {
+      // Si coincide con una cadena (dentro de comillas), la devuelve sin modificar
+      if (match[1] != null) {
+        return match[1]!;
+      }
+      // Si es un espacio fuera de las comillas, lo elimina
+      return '';
+    });
+  }
+
+  test('Remove indentation', () async {
+    String expectedResult = '''
+    {
+      "user_name": "John Doe",
+      "user_id": 1,
+      "duration": "P1Y",
+      "is_active": true,
+      "addresses": [
+        {"street_name": "Main Street", "house_number": 123},
+        {"street_name": "Second Street", "house_number": 456}
+      ],
+      "single_address": {"street_name": "Third Street", "house_number": 789},
+      "additional_attributes": {
+        "key1": "value1",
+        "key2": 42,
+        "key3": true
+      }
+    }
+    ''';
+    expectedResult = removeIndentation(expectedResult);
+
+    String string2 =
+        '{"user_name":"John Doe","user_id":1,"duration":"P1Y","is_active":true,"addresses":[{"street_name":"Main Street","house_number":123},{"street_name":"Second Street","house_number":456}],"single_address":{"street_name":"Third Street","house_number":789},"additional_attributes":{"key1":"value1","key2":42,"key3":true}}';
+
+    expect(expectedResult, string2);
+  });
+
+  //---------- Object ----------\\
+  test('Serialize/Deserialize - Address', () async {
+    Address object = Address.named(
+      streetName: 'Main Street',
+      houseNumber: 123,
+    );
+
+    String expectedResult = '{"street_name":"Main Street","house_number":123}';
+
+    String jsonString = parser.serialize(object);
+    expect(expectedResult, jsonString);
+
+    Address deserialized = parser.deserialize(jsonString, Address) as Address;
+
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - List<Address>', () async {
+    List<Address> object = [
+      Address.named(
+        streetName: 'Main Street 1',
+        houseNumber: 1234,
+      ),
+      Address.named(
+        streetName: 'Main Street 2',
+        houseNumber: 1235,
+      ),
+      Address.named(
+        streetName: 'Main Street 3',
+        houseNumber: 1236,
+      ),
+    ];
+
+    String expectedResult =
+        '[{"street_name":"Main Street 1","house_number":1234},{"street_name":"Main Street 2","house_number":1235},{"street_name":"Main Street 3","house_number":1236}]';
+
+    String jsonString = parser.serialize(object);
+    expect(expectedResult, jsonString);
+
+    List<Address> deserialized =
+        parser.deserialize(jsonString, List<Address>).cast<Address>();
+
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - User', () async {
+    User object = User.named(
+      userName: 'John Doe',
+      userId: 1,
+      duration: Duration(days: 365),
+      isActive: true,
+      addresses: [
+        Address.named(
+          streetName: 'Main Street',
+          houseNumber: 123,
+        ),
+        Address.named(
+          streetName: 'Second Street',
+          houseNumber: 456,
+        ),
+      ],
+      singleAddress: Address.named(
+        streetName: 'Third Street',
+        houseNumber: 789,
+      ),
+      additionalAttributes: {
+        'key1': 'value1',
+        'key2': 42,
+        'key3': true,
+      },
+    );
+
+    String expectedResult = '''
+    {
+      "user_name": "John Doe",
+      "user_id": 1,
+      "duration": 31536000000,
+      "is_active": true,
+      "addresses": [
+        {"street_name": "Main Street", "house_number": 123},
+        {"street_name": "Second Street", "house_number": 456}
+      ],
+      "single_address": {"street_name": "Third Street", "house_number": 789},
+      "additional_attributes": {
+        "key1": "value1",
+        "key2": 42,
+        "key3": true
+      }
+    }
+    ''';
+    expectedResult = removeIndentation(expectedResult);
+
+    String jsonString = parser.serialize(object);
+    expect(expectedResult, jsonString);
+
+    User deserialized = parser.deserialize(jsonString, User);
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - User', () async {
+    User object = User.named(
+      userName: 'John Doe',
+      userId: 1,
+      duration: Duration(days: 365),
+      isActive: true,
+      addresses: [
+        Address.named(
+          streetName: 'Main Street',
+          houseNumber: 123,
+        ),
+        Address.named(
+          streetName: 'Second Street',
+          houseNumber: 456,
+        ),
+      ],
+      singleAddress: Address.named(
+        streetName: 'Third Street',
+        houseNumber: 789,
+      ),
+      additionalAttributes: {
+        'key1': 'value1',
+        'key2': 42,
+        'key3': true,
+      },
+    );
+
+    String expectedResult = '''
+    {
+      "user_name": "John Doe",
+      "user_id": 1,
+      "duration": 31536000000,
+      "is_active": true,
+      "addresses": [
+        {"street_name": "Main Street", "house_number": 123},
+        {"street_name": "Second Street", "house_number": 456}
+      ],
+      "single_address": {"street_name": "Third Street", "house_number": 789},
+      "additional_attributes": {
+        "key1": "value1",
+        "key2": 42,
+        "key3": true
+      }
+    }
+    ''';
+    expectedResult = removeIndentation(expectedResult);
+
+    String jsonString = parser.serialize(object);
+    expect(expectedResult, jsonString);
+
+    User deserialized = parser.deserialize(jsonString, User);
+    expect(deserialized, object);
+  });
+
+  //---------- Maps ----------\\
   test('Serialize - Map<String, dynamic>', () async {
     Map<String, dynamic> object = {"name": "John", "age": 30, "active": true};
     String result = '{"name":"John","age":30,"active":true}';
@@ -357,7 +552,7 @@ void main() {
   });
 
   test('Serialize/Deserialize: Duration', () async {
-    Duration object = Duration(days: 5);
+    Duration object = Duration(days: 365);
     int rawResult = object.inMilliseconds;
     String result = rawResult.toString();
     String jsonString = parser.serialize(object);

@@ -29,9 +29,6 @@ class Address {
 }
 
 class User {
-  @CastMap<String, dynamic>()
-  Map<String, dynamic>? additionalAttributes;
-
   String? userName;
 
   int? userId;
@@ -44,6 +41,9 @@ class User {
   List<Address>? addresses;
 
   Address? singleAddress;
+
+  @CastMap<String, dynamic>()
+  Map<String, dynamic>? additionalAttributes;
 
   User();
 
