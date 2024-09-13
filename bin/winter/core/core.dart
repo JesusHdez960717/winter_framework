@@ -10,4 +10,5 @@ export 'server_config.dart';
 export 'winter_di.dart';
 export 'winter_router.dart';
 export 'winter_server.dart';
+export 'validation/validation_service.dart';
 
