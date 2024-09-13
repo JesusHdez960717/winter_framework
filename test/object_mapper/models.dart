@@ -1,5 +1,37 @@
 import '../../bin/winter/core/core.dart';
 
+class Tool implements WinterSerializer, WinterDeserializable {
+  String name;
+
+  Tool({required this.name});
+
+  factory Tool.fromJson(Map<String, dynamic> json) {
+    return Tool(
+      name: json['NAME'] as String,
+    );
+  }
+
+  @override
+  Map toJson() {
+    return {
+      'NAME': name,
+    };
+  }
+
+  @override
+  String toString() {
+    return 'Tool{name: $name}';
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Tool && runtimeType == other.runtimeType && name == other.name;
+
+  @override
+  int get hashCode => name.hashCode;
+}
+
 class Address {
   String? streetName;
   int? houseNumber;

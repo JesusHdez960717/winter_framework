@@ -1,6 +1,5 @@
 import 'package:test/test.dart';
 
-import '../../bin/jackson/object_mapper_impl.dart';
 import '../../bin/winter/winter.dart';
 import 'models.dart';
 
@@ -56,7 +55,40 @@ void main() {
     expect(expectedResult, string2);
   });
 
-  //---------- Object ----------\\
+  //---------- Object via Serializable----------\\
+  test('Serialize/Deserialize - Tool', () async {
+    Tool object = Tool(name: 'Drill');
+
+    String expectedResult = '{"NAME":"Drill"}';
+
+    String jsonString = parser.serialize(object);
+    expect(expectedResult, jsonString);
+
+    Tool deserialized = parser.deserialize(jsonString, Tool) as Tool;
+
+    expect(deserialized, object);
+  });
+
+  test('Serialize/Deserialize - List<Tool>', () async {
+    List<Tool> object = [
+      Tool(name: 'Drill'),
+      Tool(name: 'Screwdriver'),
+      Tool(name: 'Hammer')
+    ];
+    String expectedResult =
+        '[{"NAME":"Drill"},{"NAME":"Screwdriver"},{"NAME":"Hammer"}]';
+
+    String jsonString = parser.serialize(object);
+    expect(expectedResult, jsonString);
+
+    List<Tool> deserialized =
+        parser.deserialize(jsonString, List<Tool>).cast<Tool>();
+
+    expect(deserialized, object);
+  });
+
+  //---------- Object via Serializable----------\\
+  //---------- Object via Mirrors----------\\
   test('Serialize/Deserialize - Address', () async {
     Address object = Address.named(
       streetName: 'Main Street',

@@ -3,9 +3,11 @@ import 'dart:mirrors';
 
 import 'package:collection/collection.dart'; // needed firstWhereOrNull. You have to add this manually, for some reason it cannot be added automatically
 
-import '../winter/core/object_mapper.dart';
+import 'object_mapper.dart';
 
 class ObjectMapperImpl extends ObjectMapper {
+  ClassMirror jsonSerializableMirror = reflectClass(WinterDeserializable);
+
   Map<Type, ToJsonParserFunction> defaultSerializer = {
     DateTime: (dynamic object) => (object as DateTime).toIso8601String(),
     Duration: (dynamic object) => (object as Duration).inMilliseconds,
@@ -20,7 +22,8 @@ class ObjectMapperImpl extends ObjectMapper {
 
   Map<Type, FromJsonParserFunction> defaultDeserializer = {
     DateTime: (dynamic value) => DateTime.parse(value.toString()),
-    Duration: (dynamic value) => Duration(milliseconds: int.parse(value.toString())),
+    Duration: (dynamic value) =>
+        Duration(milliseconds: int.parse(value.toString())),
     Uri: (dynamic value) => Uri.parse(value.toString()),
     RegExp: (dynamic value) => RegExp(value.toString()),
     String: (dynamic value) => value as String,
@@ -83,7 +86,9 @@ class ObjectMapperImpl extends ObjectMapper {
       throw StateError('Circular reference detected');
     }
 
-    if (object is List) {
+    if (object is WinterSerializer) {
+      return object.toJson();
+    } else if (object is List) {
       return object.map((e) => _toMap(e, seen)).toList();
     } else if (object is Map) {
       return object
@@ -164,7 +169,10 @@ class ObjectMapperImpl extends ObjectMapper {
       return json;
     }
 
-    if (json is List) {
+    ClassMirror typeMirror = reflectClass(targetType);
+    if (typeMirror.superinterfaces.contains(jsonSerializableMirror)) {
+      return typeMirror.newInstance(Symbol('fromJson'), [json]).reflectee;
+    } else if (json is List) {
       ClassMirror classMirror = reflectType(targetType) as ClassMirror;
       TypeMirror paramTypeMirror = classMirror.typeArguments.first;
       Type subType = paramTypeMirror.reflectedType;

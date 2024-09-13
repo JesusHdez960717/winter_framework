@@ -1,5 +1,19 @@
 import 'package:change_case/change_case.dart';
 
+//-------------------- default impl of to/from json --------------------\\
+abstract class WinterSerializer {
+  Map toJson() {
+    throw UnimplementedError('toJson() is not implemented');
+  }
+}
+
+abstract class WinterDeserializable {
+  factory WinterDeserializable.fromJson(Map<String, dynamic> json) {
+    throw UnimplementedError('fromJson() is not implemented');
+  }
+}
+
+//-------------------- default impl of to/from json --------------------\\
 //-------------------------- naming --------------------------\\
 typedef NamingStrategy = String Function(String value);
 

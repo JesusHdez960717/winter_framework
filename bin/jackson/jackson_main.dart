@@ -1,5 +1,5 @@
 import '../winter/winter.dart';
-import 'object_mapper_impl.dart';
+import '../winter/core/object_mapper/object_mapper_impl.dart';
 
 void main() async {
   Address address1 = Address.named(streetName: 'Main Street', houseNumber: 123);
