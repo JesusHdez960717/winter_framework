@@ -5,4 +5,9 @@ TODO:
 - [] Filter Chain (Global & per route)
 - [] Doc & examples
 - [] Tests per part & with each case scenario
-- 
+
+
+
+NOTE:
+    - Validations:
+        - Los keys del map no se validan
