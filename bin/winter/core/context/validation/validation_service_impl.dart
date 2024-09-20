@@ -2,15 +2,22 @@ import 'dart:mirrors';
 
 import 'package:collection/collection.dart'; // needed firstWhereOrNull. You have to add this manually, for some reason it cannot be added automatically
 
-import '../core.dart';
-
-///TODO:
-///- agregar en el cero id que se pueda poner el nombre del field en el cvc
+import '../../core.dart';
 
 typedef ValidationFunction = bool Function(
   dynamic object,
   ConstraintValidatorContext cvc,
 );
+
+class Valid {
+  final List<ValidationFunction> validations;
+
+  const Valid(this.validations);
+}
+
+mixin ValidMessage {
+  String get defaultMessage;
+}
 
 class ConstraintValidatorContext {
   List<String> templateViolations;
@@ -52,58 +59,12 @@ class ConstraintValidatorContext {
   }
 }
 
-class Valid {
-  final List<ValidationFunction> validations;
-
-  const Valid(this.validations);
-}
-
-mixin ValidMessage {
-  String get defaultMessage;
-}
-
-class ConstrainViolation {
-  final dynamic value;
-  final String fieldName;
-  final String message;
-
-  const ConstrainViolation({
-    required this.value,
-    required this.fieldName,
-    required this.message,
-  });
-
-  @override
-  String toString() {
-    return 'ConstrainViolation{value: $value, fieldName: $fieldName, message: $message}';
-  }
-
-  //needed for tests
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ConstrainViolation &&
-          runtimeType == other.runtimeType &&
-          value.toString() == other.value.toString() &&
-          fieldName == other.fieldName &&
-          message == other.message;
-
-  @override
-  int get hashCode => value.hashCode ^ fieldName.hashCode ^ message.hashCode;
-}
-
-class ValidationException {
-  final List<ConstrainViolation> violations;
-
-  const ValidationException(this.violations);
-}
-
-class ValidationService {
+class ValidationServiceImpl extends ValidationService {
   late final NamingStrategy namingStrategy;
   final String? baseName;
   final String? defaultFieldSeparator;
 
-  ValidationService({
+  ValidationServiceImpl({
     NamingStrategy? namingStrategy,
     this.baseName = 'root',
     this.defaultFieldSeparator = '.',
@@ -111,6 +72,7 @@ class ValidationService {
     this.namingStrategy = namingStrategy ?? NamingStrategies.basic;
   }
 
+  @override
   List<ConstrainViolation> validate(
     dynamic object, {
     String? parentFieldName,
@@ -118,7 +80,7 @@ class ValidationService {
   }) {
     //if its null set the default base-name as parent field name, and,
     //the default field-separator
-    //When: usualy the first time its called if user dont specify it this default values are used
+    //When: usually the first time its called if user dont specify it this default values are used
     parentFieldName ??= baseName;
     fieldSeparator ??= defaultFieldSeparator;
 
@@ -159,7 +121,8 @@ class ValidationService {
 
       for (var declaration in classMirror.declarations.values) {
         if (declaration is VariableMirror && !declaration.isStatic) {
-          var fieldName = '$parentFieldName$fieldSeparator${_getFieldName(declaration)}';
+          var fieldName =
+              '$parentFieldName$fieldSeparator${_getFieldName(declaration)}';
           var fieldValue =
               objectMirror.getField(declaration.simpleName).reflectee;
 
@@ -301,35 +264,4 @@ class ValidationService {
     String rawFieldName = MirrorSystem.getName(field.simpleName);
     return namingStrategy(rawFieldName);
   }
-}
-
-class NotEmpty extends Valid with ValidMessage {
-  const NotEmpty() : super(const [notEmpty]);
-
-  @override
-  String get defaultMessage => 'Value can\'t be empty';
-}
-
-bool notEmpty(dynamic property, ConstraintValidatorContext cvc) {
-  if (property == null) {
-    return true;
-  } else if (property is String && property.isEmpty) {
-    cvc.addTemplateViolation('Text can\'t be empty');
-  } else if (property is List && property.isEmpty) {
-    cvc.addTemplateViolation('List can\'t be empty');
-  } else if (property is Map && property.isEmpty) {
-    cvc.addTemplateViolation('Map can\'t be empty');
-  }
-  return cvc.isValid();
-}
-
-class NotNull extends Valid with ValidMessage {
-  const NotNull() : super(const [notNull]);
-
-  @override
-  String get defaultMessage => 'Value can\'t be null';
-}
-
-bool notNull(dynamic property, ConstraintValidatorContext cvc) {
-  return property != null;
 }

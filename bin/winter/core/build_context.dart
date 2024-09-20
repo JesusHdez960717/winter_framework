@@ -6,6 +6,8 @@ class BuildContext {
 
   final ObjectMapper objectMapper;
 
+  final ValidationService validationService;
+
   final WinterDI di;
 
   static BuildContext _singleton = BuildContext._internal();
@@ -24,5 +26,6 @@ class BuildContext {
   BuildContext._internal()
       : timestamp = DateTime.now(),
         objectMapper = ObjectMapperImpl(),
+        validationService = ValidationServiceImpl(),
         di = WinterDI.instance;
 }

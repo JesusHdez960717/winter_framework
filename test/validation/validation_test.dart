@@ -8,7 +8,7 @@ late ValidationService vs;
 void main() {
   setUpAll(() {
     // Global config for all tests
-    vs = ValidationService();
+    vs = ValidationServiceImpl();
   });
 
   test('Class Level Validation - Tool', () async {
@@ -42,7 +42,7 @@ void main() {
   });
 
   test('Custom baseName - Address', () async {
-    ValidationService vs = ValidationService(baseName: 'this');
+    ValidationService vs = ValidationServiceImpl(baseName: 'this');
     Address address = Address(
       streetName: '',
       houseNumber: null,
@@ -65,7 +65,7 @@ void main() {
   });
 
   test('Custom field separator - Address', () async {
-    ValidationService vs = ValidationService(defaultFieldSeparator: ' -> ');
+    ValidationService vs = ValidationServiceImpl(defaultFieldSeparator: ' -> ');
     Address address = Address(
       streetName: '',
       houseNumber: null,
@@ -111,7 +111,7 @@ void main() {
 
   test('Naming Strategy + Custom field separator + Custom baseName - Address',
       () async {
-    ValidationService vs = ValidationService(
+    ValidationService vs = ValidationServiceImpl(
       baseName: 'this',
       defaultFieldSeparator: ' -> ',
       namingStrategy: NamingStrategies.snakeCase,
