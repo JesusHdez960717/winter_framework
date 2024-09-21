@@ -22,11 +22,13 @@ mixin ValidMessage {
 class ConstraintValidatorContext {
   List<String> templateViolations;
   List<ConstrainViolation> constrainViolations;
-  bool concatParentName;
+  final bool concatParentName;
+  final Valid parent;
 
   ConstraintValidatorContext({
     List<ConstrainViolation>? constrainViolations,
     this.concatParentName = true,
+    required this.parent,
   })  : constrainViolations = constrainViolations ?? [],
         templateViolations = [];
 
@@ -187,9 +189,11 @@ class ValidationServiceImpl extends ValidationService {
   }) {
     List<ConstrainViolation> violations = [];
     if (valid.isNotEmpty) {
-      ConstraintValidatorContext cvc = ConstraintValidatorContext();
       for (var element in valid) {
         for (var singleValidation in element.validations) {
+          ConstraintValidatorContext cvc = ConstraintValidatorContext(
+            parent: element,
+          );
           bool valid = singleValidation(fieldValue, cvc);
           if (!valid) {
             if (cvc.hasAnyViolations()) {
