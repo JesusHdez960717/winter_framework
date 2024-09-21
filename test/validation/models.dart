@@ -133,3 +133,45 @@ bool customUser(dynamic prop, ConstraintValidatorContext cvc) {
   }
   return cvc.isValid();
 }
+
+class NotBlankTestModel {
+  @NotBlank()
+  final String notBlankParam;
+
+  NotBlankTestModel(this.notBlankParam);
+}
+
+class NotNullTestModel {
+  @NotNull()
+  final String? notNullParam;
+
+  NotNullTestModel(this.notNullParam);
+}
+
+class NotEmptyStringTestModel {
+  @NotEmpty()
+  final String notEmptyParam;
+
+  NotEmptyStringTestModel(this.notEmptyParam);
+}
+
+class NotEmptyListTestModel {
+  @NotEmpty()
+  final List<String> notEmptyParam;
+
+  NotEmptyListTestModel(this.notEmptyParam);
+}
+
+class NotEmptyMapTestModel {
+  @NotEmpty()
+  final Map<String, String> notEmptyParam;
+
+  NotEmptyMapTestModel(this.notEmptyParam);
+}
+
+class NotEmptySetTestModel {
+  @NotEmpty()
+  final Set<String> notEmptyParam;
+
+  NotEmptySetTestModel(this.notEmptyParam);
+}

@@ -4,6 +4,8 @@ import '../../bin/winter/winter.dart';
 import 'models.dart';
 
 late ValidationService vs;
+///TODO: test for
+///- premade: Size
 
 void main() {
   setUpAll(() {
@@ -312,5 +314,131 @@ void main() {
     ];
 
     expect(violations, correctValidations);
+  });
+
+  test('Pre-made Validation: NotBlank', () async {
+    ///--------- Fail Validation ---------\\\
+    NotBlankTestModel object1 = NotBlankTestModel('    ');
+    List<ConstrainViolation> violations1 = vs.validate(object1);
+
+    List<ConstrainViolation> correctValidations = [
+      ConstrainViolation(
+        value: '    ',
+        fieldName: 'root.notBlankParam',
+        message: 'Value can\'t be blank',
+      ),
+    ];
+
+    expect(violations1, correctValidations);
+
+    ///--------- Working Validation ---------\\\
+    NotBlankTestModel object2 = NotBlankTestModel('Hi world');
+    List<ConstrainViolation> violations2 = vs.validate(object2);
+    expect(violations2, []);
+  });
+
+  test('Pre-made Validation: NotNull', () async {
+    ///--------- Fail Validation ---------\\\
+    NotNullTestModel object1 = NotNullTestModel(null);
+    List<ConstrainViolation> violations1 = vs.validate(object1);
+
+    List<ConstrainViolation> correctValidations = [
+      ConstrainViolation(
+        value: null,
+        fieldName: 'root.notNullParam',
+        message: 'Value can\'t be null',
+      ),
+    ];
+
+    expect(violations1, correctValidations);
+
+    ///--------- Working Validation ---------\\\
+    NotNullTestModel object2 = NotNullTestModel('Hi world');
+    List<ConstrainViolation> violations2 = vs.validate(object2);
+    expect(violations2, []);
+  });
+
+  test('Pre-made Validation: NotEmpty - String', () async {
+    ///--------- Fail Validation ---------\\\
+    NotEmptyStringTestModel object1 = NotEmptyStringTestModel('');
+    List<ConstrainViolation> violations1 = vs.validate(object1);
+
+    List<ConstrainViolation> correctValidations = [
+      ConstrainViolation(
+        value: '',
+        fieldName: 'root.notEmptyParam',
+        message: 'Text can\'t be empty',
+      ),
+    ];
+
+    expect(violations1, correctValidations);
+
+    ///--------- Working Validation ---------\\\
+    NotEmptyStringTestModel object2 = NotEmptyStringTestModel('Hi world');
+    List<ConstrainViolation> violations2 = vs.validate(object2);
+    expect(violations2, []);
+  });
+
+  test('Pre-made Validation: NotEmpty - List', () async {
+    ///--------- Fail Validation ---------\\\
+    NotEmptyListTestModel object1 = NotEmptyListTestModel([]);
+    List<ConstrainViolation> violations1 = vs.validate(object1);
+
+    List<ConstrainViolation> correctValidations = [
+      ConstrainViolation(
+        value: [],
+        fieldName: 'root.notEmptyParam',
+        message: 'List can\'t be empty',
+      ),
+    ];
+
+    expect(violations1, correctValidations);
+
+    ///--------- Working Validation ---------\\\
+    NotEmptyListTestModel object2 = NotEmptyListTestModel(['Hi world']);
+    List<ConstrainViolation> violations2 = vs.validate(object2);
+    expect(violations2, []);
+  });
+
+  test('Pre-made Validation: NotEmpty - Map', () async {
+    ///--------- Fail Validation ---------\\\
+    NotEmptyMapTestModel object1 = NotEmptyMapTestModel({});
+    List<ConstrainViolation> violations1 = vs.validate(object1);
+
+    List<ConstrainViolation> correctValidations = [
+      ConstrainViolation(
+        value: {},
+        fieldName: 'root.notEmptyParam',
+        message: 'Map can\'t be empty',
+      ),
+    ];
+
+    expect(violations1, correctValidations);
+
+    ///--------- Working Validation ---------\\\
+    NotEmptyMapTestModel object2 = NotEmptyMapTestModel({'hi': 'Hi world'});
+    List<ConstrainViolation> violations2 = vs.validate(object2);
+    expect(violations2, []);
+  });
+
+  test('Pre-made Validation: NotEmpty - Set', () async {
+    ///--------- Fail Validation ---------\\\
+    NotEmptySetTestModel object1 = NotEmptySetTestModel({});
+    List<ConstrainViolation> violations1 = vs.validate(object1);
+
+    List<ConstrainViolation> correctValidations = [
+      ConstrainViolation(
+        value: {},
+        fieldName: 'root.notEmptyParam',
+        message: 'Set can\'t be empty',
+      ),
+    ];
+
+    expect(violations1, correctValidations);
+
+    ///--------- Working Validation ---------\\\
+    NotEmptySetTestModel object2 = NotEmptySetTestModel({'Hi world'});
+    List<ConstrainViolation> violations2 = vs.validate(object2);
+    expect(violations2, []);
   });
 }
