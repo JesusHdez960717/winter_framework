@@ -4,6 +4,15 @@ import 'dart:io';
 import 'core.dart';
 import 'winter_io.dart' as WinterIo;
 
+///Dependency Injection: easy access to the current dependency injection instance
+WinterDI get di => WinterServer.instance.context.dependencyInjection;
+
+///Dependency Injection: easy access to the current object mapper instance
+ObjectMapper get om => WinterServer.instance.context.objectMapper;
+
+///Validation Service: easy access to the current validation service instance
+ValidationService get vs => WinterServer.instance.context.validationService;
+
 class WinterServer {
   static WinterServer get instance {
     if (_winterServer == null) {
@@ -18,7 +27,6 @@ class WinterServer {
   final BuildContext context;
   final ServerConfig config;
   final WinterRouter router;
-  final ExceptionHandler exceptionHandler;
 
   late final HttpServer runningServer;
 
@@ -33,8 +41,7 @@ class WinterServer {
     WinterDI? di,
   })  : context = context ?? BuildContext(),
         config = config ?? ServerConfig(),
-        router = router ?? SimpleWinterRouter(),
-        exceptionHandler = exceptionHandler ?? SimpleExceptionHandler();
+        router = router ?? SimpleWinterRouter();
 
   ///Start the web server with all the current config in this object
   ///beforeStart:
@@ -101,7 +108,8 @@ class WinterServer {
 
     runningServer = await WinterIo.serve(
       (request) => router.call(request),
-      exceptionHandler: (request, error, stackTrac) => exceptionHandler.call(
+      exceptionHandler: (request, error, stackTrac) =>
+          context.exceptionHandler.call(
         request,
         error,
         stackTrac,

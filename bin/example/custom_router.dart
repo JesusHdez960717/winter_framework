@@ -12,7 +12,7 @@ class CustomRouter {
         path: '/hw2',
         method: HttpMethod.GET,
         handler: (request) => ResponseEntity.ok(
-          body: WinterServer.instance.context.di.find<String>(tag: 'hello-world'),
+          body: WinterServer.instance.context.dependencyInjection.find<String>(tag: 'hello-world'),
         ),
       ),
       WinterRoute(

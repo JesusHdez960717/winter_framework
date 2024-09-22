@@ -8,7 +8,9 @@ class BuildContext {
 
   final ValidationService validationService;
 
-  final WinterDI di;
+  final ExceptionHandler exceptionHandler;
+
+  final WinterDI dependencyInjection;
 
   static BuildContext _singleton = BuildContext._internal();
 
@@ -27,5 +29,6 @@ class BuildContext {
       : timestamp = DateTime.now(),
         objectMapper = ObjectMapperImpl(),
         validationService = ValidationServiceImpl(),
-        di = WinterDI.instance;
+        exceptionHandler = SimpleExceptionHandler(),
+        dependencyInjection = WinterDI.instance;
 }
