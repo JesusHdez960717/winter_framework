@@ -13,6 +13,13 @@ class Tool {
 }
 
 bool customTool(dynamic prop, ConstraintValidatorContext cvc) {
+  if (prop is! Tool) {
+    cvc.addViolation(
+      value: prop,
+      fieldName: 'root',
+      message: 'Value is no a Tool',
+    );
+  }
   Tool tool = prop as Tool;
   if (tool.name == 'hammer') {
     cvc.addTemplateViolation('Cant be a hammer');
@@ -170,8 +177,14 @@ class NotEmptyMapTestModel {
 }
 
 class NotEmptySetTestModel {
-  @NotEmpty()
   final Set<String> notEmptyParam;
 
   NotEmptySetTestModel(this.notEmptyParam);
+}
+
+class SizedTestModel {
+  @Size(min: 5, max: 50)
+  final String sizedParam;
+
+  SizedTestModel(this.sizedParam);
 }

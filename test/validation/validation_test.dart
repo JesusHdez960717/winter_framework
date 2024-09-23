@@ -4,6 +4,7 @@ import '../../bin/winter/winter.dart';
 import 'models.dart';
 
 late ValidationService vs;
+
 ///TODO: test for
 ///- premade: Size
 
@@ -438,6 +439,27 @@ void main() {
 
     ///--------- Working Validation ---------\\\
     NotEmptySetTestModel object2 = NotEmptySetTestModel({'Hi world'});
+    List<ConstrainViolation> violations2 = vs.validate(object2);
+    expect(violations2, []);
+  });
+
+  test('Pre-made Validation: Size - String', () async {
+    ///--------- Fail Validation ---------\\\
+    SizedTestModel object1 = SizedTestModel('');
+    List<ConstrainViolation> violations1 = vs.validate(object1);
+
+    List<ConstrainViolation> correctValidations = [
+      ConstrainViolation(
+        value: '',
+        fieldName: 'root.sizedParam',
+        message: 'Text length must be greater than 5',
+      ),
+    ];
+
+    expect(violations1, correctValidations);
+
+    ///--------- Working Validation ---------\\\
+    SizedTestModel object2 = SizedTestModel('Hi world');
     List<ConstrainViolation> violations2 = vs.validate(object2);
     expect(violations2, []);
   });

@@ -32,10 +32,11 @@ bool notBlank(dynamic property, ConstraintValidatorContext cvc) {
 
 //-------------- Not Empty --------------\\
 class NotEmpty extends Valid with ValidMessage {
-  const NotEmpty() : super(const [notEmpty]);
+  final String? message;
+  const NotEmpty({this.message}) : super(const [notEmpty]);
 
   @override
-  String get defaultMessage => 'Value can\'t be empty';
+  String get defaultMessage => message ?? 'Value can\'t be empty';
 }
 
 bool notEmpty(dynamic property, ConstraintValidatorContext cvc) {
