@@ -1,5 +1,6 @@
 import 'package:test/test.dart';
 
+import '../../bin/winter/core/context/exception/exceptions.dart';
 import '../../bin/winter/winter.dart';
 import 'models.dart';
 
@@ -14,12 +15,54 @@ void main() {
     vs = ValidationServiceImpl();
   });
 
+  test('Manual validation - CustomValidatableObject', () async {
+    ///NOTE that the
+    CustomValidatableObject object = CustomValidatableObject(name: 'abc');
+
+    List<ConstrainViolation> violations = vs.validate(object);
+    List<ConstrainViolation> correctValidations = [
+      ConstrainViolation(
+        value: 'abc',
+        fieldName: 'base-object.name',
+        message: 'Name can\'t have 3 letters',
+      ),
+    ];
+
+    expect(violations, correctValidations);
+  });
+
   test('Class Level Validation - Tool', () async {
     Tool object = Tool(name: 'hammer');
 
     List<ConstrainViolation> violations = vs.validate(object);
+    List<ConstrainViolation> correctValidations = [
+      ConstrainViolation(
+        value: object,
+        fieldName: 'root',
+        message: 'Cant be a hammer',
+      ),
+    ];
+    expect(violations, correctValidations);
+  });
 
-    expect(violations.length, 1); //custom tool (not a hammer)
+  test('Throw exception on fail - Tool', () async {
+    Tool object = Tool(name: 'hammer');
+
+    try {
+      vs.validate(
+        object,
+        throwExceptionOnFail: true,
+      );
+    } on ValidationException catch (exc) {
+      List<ConstrainViolation> correctValidations = [
+        ConstrainViolation(
+          value: object,
+          fieldName: 'root',
+          message: 'Cant be a hammer',
+        ),
+      ];
+      expect(exc.violations, correctValidations);
+    }
   });
 
   test('Field Level validation - Address', () async {
@@ -477,5 +520,16 @@ void main() {
     SizedTestModel object2 = SizedTestModel('Hi world');
     List<ConstrainViolation> violations2 = vs.validate(object2);
     expect(violations2, []);
+  });
+
+  test('Pre-made Validation: Size (Min/Max Order) -  String', () async {
+    ///--------- Fail Validation ---------\\\
+    SizedTestMinMaxOrderModel object1 = SizedTestMinMaxOrderModel('');
+
+    try {
+      vs.validate(object1);
+    } on StateError catch (e) {
+      expect(e.message, 'Min size must be less than Max (min <= max)');
+    }
   });
 }

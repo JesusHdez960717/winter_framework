@@ -3,6 +3,7 @@ import 'dart:mirrors';
 import 'package:collection/collection.dart'; // needed firstWhereOrNull. You have to add this manually, for some reason it cannot be added automatically
 
 import '../../core.dart';
+import '../exception/exceptions.dart';
 
 typedef ValidationFunction = bool Function(
   dynamic object,
@@ -65,11 +66,13 @@ class ValidationServiceImpl extends ValidationService {
   late final NamingStrategy namingStrategy;
   final String? baseName;
   final String? defaultFieldSeparator;
+  final bool? defaultTrowException;
 
   ValidationServiceImpl({
     NamingStrategy? namingStrategy,
     this.baseName = 'root',
     this.defaultFieldSeparator = '.',
+    this.defaultTrowException = false,
   }) {
     this.namingStrategy = namingStrategy ?? NamingStrategies.basic;
   }
@@ -79,12 +82,14 @@ class ValidationServiceImpl extends ValidationService {
     dynamic object, {
     String? parentFieldName,
     String? fieldSeparator,
+    bool? throwExceptionOnFail = false,
   }) {
     //if its null set the default base-name as parent field name, and,
     //the default field-separator
     //When: usually the first time its called if user dont specify it this default values are used
     parentFieldName ??= baseName;
     fieldSeparator ??= defaultFieldSeparator;
+    throwExceptionOnFail ??= defaultTrowException;
 
     List<ConstrainViolation> violations = [];
 
@@ -108,48 +113,61 @@ class ValidationServiceImpl extends ValidationService {
         );
       }
     } else {
-      var objectMirror = reflect(object);
-      var classMirror = objectMirror.type;
+      if (object is Validatable) {
+        violations.addAll(
+          object.validate(
+            parentFieldName: parentFieldName,
+            fieldSeparator: fieldSeparator,
+          ),
+        );
+      } else {
+        var objectMirror = reflect(object);
+        var classMirror = objectMirror.type;
 
-      //process class level annotations
-      List<Valid> rootValid = _getValid(classMirror.metadata);
-      violations.addAll(
-        processValid(
-          valid: rootValid,
-          fieldValue: object,
-          fieldName: parentFieldName!,
-        ),
-      );
+        //process class level annotations
+        List<Valid> rootValid = _getValid(classMirror.metadata);
+        violations.addAll(
+          processValid(
+            valid: rootValid,
+            fieldValue: object,
+            fieldName: parentFieldName!,
+          ),
+        );
 
-      for (var declaration in classMirror.declarations.values) {
-        if (declaration is VariableMirror && !declaration.isStatic) {
-          var fieldName =
-              '$parentFieldName$fieldSeparator${_getFieldName(declaration)}';
-          var fieldValue =
-              objectMirror.getField(declaration.simpleName).reflectee;
+        for (var declaration in classMirror.declarations.values) {
+          if (declaration is VariableMirror && !declaration.isStatic) {
+            var fieldName =
+                '$parentFieldName$fieldSeparator${_getFieldName(declaration)}';
+            var fieldValue =
+                objectMirror.getField(declaration.simpleName).reflectee;
 
-          List<Valid> valid = _getValid(declaration.metadata);
-          violations.addAll(
-            processValid(
-              valid: valid,
-              fieldValue: fieldValue,
-              fieldName: fieldName,
-            ),
-          );
-
-          if (doRecursiveType(fieldValue)) {
+            List<Valid> valid = _getValid(declaration.metadata);
             violations.addAll(
-              validate(
-                fieldValue,
-                parentFieldName: fieldName,
+              processValid(
+                valid: valid,
+                fieldValue: fieldValue,
+                fieldName: fieldName,
               ),
             );
+
+            if (doRecursiveType(fieldValue)) {
+              violations.addAll(
+                validate(
+                  fieldValue,
+                  parentFieldName: fieldName,
+                ),
+              );
+            }
           }
         }
       }
     }
 
-    return violations;
+    if (throwExceptionOnFail == true && violations.isNotEmpty) {
+      throw ValidationException(violations: violations);
+    } else {
+      return violations;
+    }
   }
 
   bool doRecursiveType(dynamic object) {

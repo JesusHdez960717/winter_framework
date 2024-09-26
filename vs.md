@@ -429,11 +429,50 @@ where you will find ALL possible use cases with their example.
 
 If there is something wrong or a bug, feel free to create an issue (and even it's PR)
 
+#### Throw ValidationException
+
+The default behaviour when validating an object is return a `List<ConstrainViolation>`, but some times it's easy to just
+throw an exception.
+
+Imagine this scenario:
+
+```dart
+example() {
+  Tool object = Tool(name: 'hammer');
+
+  List<ConstrainViolation> violations = vs.validate(object);
+
+  if (violations.isNotEmpty) {
+    ///some validation failed, do something
+  } else {
+    ///everything oka
+  }
+}
+```
+
+But you can also do:
+
+```dart
+example() {
+  Tool object = Tool(name: 'hammer');
+
+  try {
+    vs.validate(object);
+
+    ///continue doing normal stuff
+  } on ValidationException catch (exc) {
+    ///some validation failed, do something
+  }
+}
+```
+
+**NOTE:** the real use of this validation throwing is to integrate this validations with the exception handler, this way
+if a validations fails the developer will not have to do anything and a 422 response will be automatically sent.
+More details of this in the exception-handling docs.
+
 ### What's next
 
 In the future we will be doing:
+
 - More tests to expand the possibles use cases
 - Add a validation for async
-- Add a mixin/abstract class for manual validations in case you don't wanna use the annotations system
-- Extension to call `.valid()` or similar in any object and have it validated
-- The ability to throw an exception (default configured )

@@ -1,53 +1,7 @@
-/// Clase que representa una validacion fallada de un objeto:
-///
-/// Example:
-/// Teniendo la clase:
-///
-/// class Address {
-///   @Valid([notNull, notEmpty])
-///   String? streetName;
-///
-///   @NotNull()
-///   int? houseNumber;
-///
-///   Address({
-///     this.streetName,
-///     this.houseNumber,
-///   });
-///
-///   @override
-///   String toString() {
-///     return 'Address{streetName: $streetName, houseNumber: $houseNumber}';
-///   }
-/// }
-///
-/// Creamos una instancia:
-///     Address address = Address(
-///       streetName: '',
-///       houseNumber: null,
-///     );
-///
-/// Validamos la instancia `address`:
-///     List<ConstrainViolation> violations = vs.validate(address);
-///
-/// Nos devuelve las ConstrainViolations:
-///     List<ConstrainViolation> correctValidations = [
-///       //El campo streetName no puede ser ni null ni vacio, la validacion de null no falla,
-///       //pero la de NotEmpty si, por lo que se genera un ConstrainViolation con esos datos
-///       ConstrainViolation(
-///         value: '',
-///         fieldName: 'root.streetName',
-///         message: 'Text can\'t be empty',
-///       ),
-///       //De igual manera el houseNumber falla porque su valor es null
-///       ConstrainViolation(
-///         value: null,
-///         fieldName: 'root.houseNumber',
-///         message: 'Value can\'t be null',
-///       ),
-///     ];
-///
-///
+import '../../core.dart';
+
+/// Class that represent a fail validation
+/// (Details and examples in docs)
 class ConstrainViolation {
   ///Valor con el que fallo la validacion
   final dynamic value;
@@ -85,10 +39,38 @@ class ConstrainViolation {
   int get hashCode => value.hashCode ^ fieldName.hashCode ^ message.hashCode;
 }
 
+///Default class to define the validation
 abstract class ValidationService {
   List<ConstrainViolation> validate(
     dynamic object, {
     String? parentFieldName,
     String? fieldSeparator,
+    bool throwExceptionOnFail,
   });
+}
+
+///mixin to implement in every class where the validation want to be done it by hand
+mixin Validatable {
+  List<ConstrainViolation> validate({
+    String? parentFieldName,
+    String? fieldSeparator,
+  });
+}
+
+///extension to make every object validatable
+///Just call: `someObject.validate()`
+///
+/// NOTE: this only work with an already initialized winter-server with a
+/// previously configured ValidationService instance
+extension GloballyValidatable on Object {
+  List<ConstrainViolation> validate({
+    String? parentFieldName,
+    String? fieldSeparator,
+  }) {
+    return vs.validate(
+      this,
+      parentFieldName: parentFieldName,
+      fieldSeparator: fieldSeparator,
+    );
+  }
 }

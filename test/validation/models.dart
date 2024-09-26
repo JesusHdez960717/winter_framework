@@ -1,5 +1,35 @@
 import '../../bin/winter/core/core.dart';
 
+class CustomValidatableObject with Validatable {
+  //This annotation is ignored because the use of Validatable
+  @Size(min: 5, max: 10)
+  String? name;
+
+  CustomValidatableObject({required this.name});
+
+  @override
+  String toString() {
+    return 'CustomValidatableObject{name: $name}';
+  }
+
+  @override
+  List<ConstrainViolation> validate({
+    String? parentFieldName,
+    String? fieldSeparator,
+  }) {
+    if (name?.length == 3) {
+      return [
+        ConstrainViolation(
+          value: name,
+          fieldName: 'base-object.name',
+          message: 'Name can\'t have 3 letters',
+        ),
+      ];
+    }
+    return [];
+  }
+}
+
 @Valid([customTool])
 class Tool {
   String? name;
@@ -178,6 +208,7 @@ class NotEmptyMapTestModel {
 }
 
 class NotEmptySetTestModel {
+  @NotEmpty()
   final Set<String> notEmptyParam;
 
   NotEmptySetTestModel(this.notEmptyParam);
@@ -188,4 +219,11 @@ class SizedTestModel {
   final String sizedParam;
 
   SizedTestModel(this.sizedParam);
+}
+
+class SizedTestMinMaxOrderModel {
+  @Size(min: 50, max: 5)
+  final String sizedParam;
+
+  SizedTestMinMaxOrderModel(this.sizedParam);
 }
