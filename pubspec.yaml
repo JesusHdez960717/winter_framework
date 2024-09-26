@@ -1,7 +1,7 @@
-name: shelf_test
-description: A server app using the shelf package and Docker.
-version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+name: winter_framework
+description: A rest framework for create lightweight services
+version: 0.0.0
+repository: https://github.com/JesusHdez960717/winter_framework.git
 
 environment:
   sdk: ^3.5.0
