@@ -3,6 +3,9 @@
 The *Validation Service* is designed to provide a foundation for validating objects, aiming to
 integrate as seamlessly as possible with the server.
 
+**NOTE:** All examples and all possibles use cases are in the test folder of this project, so for more
+details (all possibles details), go take a look at those test/examples
+
 ### Creating an instance:
 
 The most generic class, `ValidationService`, implements a method `validate`, which takes the object
@@ -169,6 +172,46 @@ List<ConstrainViolation> listViolation = [
 ];
 ```
 
+#### Custom Field Name
+
+If you want the field name to be different, you can annotate it with: `@JsonProperty('FIELD_NAME')`
+
+Taking this object as an example:
+
+```dart
+class Car {
+  @NotEmpty()
+  @JsonProperty('BRAND')
+  String? brand;
+
+  Car({required this.brand});
+
+  @override
+  String toString() {
+    return 'Car{brand: $brand}';
+  }
+}
+```
+
+We create an instance and validate it, the result is:
+
+```dart
+
+Car car = Car(
+  brand: '',
+);
+
+List<ConstrainViolation> violations = vs.validate(car);
+//  violations is same:
+// violations ===>>> [
+//   ConstrainViolation(
+//     value: '',
+//     fieldName: 'this.BRAND',
+//     message: 'Text can\'t be empty',
+//   ),
+// ];
+```
+
 ### Custom Validations
 
 You can also create custom validations. To do so, you have two options:
@@ -226,8 +269,10 @@ Tool tool = Tool(name: 'hammer');
 List<ConstrainViolation> violations = vs.validate(tool);
 ```
 
-2 - You can go further by creating a custom annotation (this example simplifies the `@Size`
+2 - You can go further by creating a custom annotation, (this example simplifies the `@Size`
 annotation):
+
+Note that the annotation has to extend `Valid` for it to work:
 
 ```dart
 
@@ -383,3 +428,12 @@ That's all, If you need more examples, you can go to the unit tests of this serv
 where you will find ALL possible use cases with their example.
 
 If there is something wrong or a bug, feel free to create an issue (and even it's PR)
+
+### What's next
+
+In the future we will be doing:
+- More tests to expand the possibles use cases
+- Add a validation for async
+- Add a mixin/abstract class for manual validations in case you don't wanna use the annotations system
+- Extension to call `.valid()` or similar in any object and have it validated
+- The ability to throw an exception (default configured )

@@ -29,6 +29,7 @@ bool customTool(dynamic prop, ConstraintValidatorContext cvc) {
 
 class Car {
   @NotEmpty()
+  @JsonProperty('BRAND')
   String? brand;
 
   Car({required this.brand});

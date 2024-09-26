@@ -44,6 +44,21 @@ void main() {
     expect(violations, correctValidations);
   });
 
+  test('Custom fieldName - Car', () async {
+    Car car = Car(brand: '');
+
+    List<ConstrainViolation> violations = vs.validate(car);
+    List<ConstrainViolation> correctValidations = [
+      ConstrainViolation(
+        value: '',
+        fieldName: 'root.BRAND',
+        message: 'Text can\'t be empty',
+      ),
+    ];
+
+    expect(violations, correctValidations);
+  });
+
   test('Custom baseName - Address', () async {
     ValidationService vs = ValidationServiceImpl(baseName: 'this');
     Address address = Address(
