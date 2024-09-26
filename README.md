@@ -1,13 +1,24 @@
-TODO:
-- [] Object mapper (agregar los content typer, tanto para request como response cuando se parsea)
-- [] Validations
-- [] Review the entire project & clean up, fix exports...
-- [] Filter Chain (Global & per route)
-- [] Doc & examples
-- [] Tests per part & with each case scenario
+## Winter Framework
 
+This project aims to be a lightweight web server to create BASICS services and APIs
+This is an EXPERIMENTAL project, and it's by no means a ready for production framework, use it at your own discretion
 
+**This project is:**
 
-NOTE:
-    - Validations:
-        - Los keys del map no se validan
+- An **experimental** framework
+- A lightweight library for create rest APIs
+- A *hobby* project in which we work when we have some spare time
+
+**This project is NOT:**
+
+- A ready for production framework
+- A fullstack framework to create all kind of webs (just simple rest apis, for the moment at least)
+- A complete project (most of the features are extremely basics)
+
+Now that we have made all this clear, **let's start**
+
+### How to start the server:
+
+```dart
+
+```

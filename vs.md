@@ -470,9 +470,6 @@ example() {
 if a validations fails the developer will not have to do anything and a 422 response will be automatically sent.
 More details of this in the exception-handling docs.
 
-### What's next
+### Extra notes:
 
-In the future we will be doing:
-
-- More tests to expand the possibles use cases
-- Add a validation for async
+- Map keys are not validated: To do this you will need to implement your own validation
