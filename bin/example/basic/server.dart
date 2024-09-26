@@ -20,7 +20,7 @@ void main() => WinterServer(
             handler: (request) async {
               HiWorldRequest? body = await request.body<HiWorldRequest>();
 
-              body?.validate();
+              body?.validate(throwExceptionOnFail: true);
 
               return ResponseEntity.ok(
                 body: HiWorldResponse(body!.hi),

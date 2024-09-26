@@ -45,7 +45,7 @@ abstract class ValidationService {
     dynamic object, {
     String? parentFieldName,
     String? fieldSeparator,
-    bool throwExceptionOnFail,
+    bool? throwExceptionOnFail,
   });
 }
 
@@ -66,11 +66,13 @@ extension GloballyValidatable on Object {
   List<ConstrainViolation> validate({
     String? parentFieldName,
     String? fieldSeparator,
+    bool? throwExceptionOnFail,
   }) {
     return vs.validate(
       this,
       parentFieldName: parentFieldName,
       fieldSeparator: fieldSeparator,
+      throwExceptionOnFail: throwExceptionOnFail,
     );
   }
 }
