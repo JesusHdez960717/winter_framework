@@ -33,6 +33,7 @@ bool notBlank(dynamic property, ConstraintValidatorContext cvc) {
 //-------------- Not Empty --------------\\
 class NotEmpty extends Valid with ValidMessage {
   final String? message;
+
   const NotEmpty({this.message}) : super(const [notEmpty]);
 
   @override
@@ -72,6 +73,9 @@ bool size(dynamic property, ConstraintValidatorContext cvc) {
         'size validation called inside a non Size annotation (@Size)');
   }
   Size rawAnnotation = cvc.parent as Size;
+  if (rawAnnotation.min > rawAnnotation.max) {
+    throw StateError('Min size must be less than Max (min <= max)');
+  }
 
   int length = 0;
   String type = '';
