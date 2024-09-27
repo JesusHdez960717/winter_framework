@@ -1,23 +1,44 @@
-import 'package:collection/collection.dart';
+class HttpMethod {
+  static HttpMethod get = HttpMethod('get');
+  static HttpMethod post = HttpMethod('post');
+  static HttpMethod put = HttpMethod('put');
+  static HttpMethod patch = HttpMethod('patch');
+  static HttpMethod delete = HttpMethod('delete');
+  static HttpMethod head = HttpMethod('head');
+  static HttpMethod options = HttpMethod('options');
+  static List<HttpMethod> values = [
+    get,
+    post,
+    put,
+    patch,
+    delete,
+    head,
+    options,
+  ];
 
-enum HttpMethod {
-  GET,
-  POST,
-  PUT,
-  PATCH,
-  DELETE,
-  HEAD,
-  OPTIONS;
+  String name;
 
-  static HttpMethod valueOf(String method) {
-    return HttpMethod.values.firstWhere(
-      (element) => element.name.toLowerCase() == method.toLowerCase(),
-    );
+  HttpMethod(this.name);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    if (other is HttpMethod) {
+      return name.toLowerCase() == other.name.toLowerCase();
+    }
+    if (other is String) {
+      return name.toLowerCase() == other.toLowerCase();
+    }
+    return false;
   }
 
-  static HttpMethod? valueOfOrNull(String method) {
-    return HttpMethod.values.firstWhereOrNull(
-      (element) => element.name.toLowerCase() == method.toLowerCase(),
-    );
+  @override
+  int get hashCode => name.toLowerCase().hashCode;
+
+  @override
+  String toString() {
+    return name;
   }
 }

@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:shelf/shelf_io.dart' as shelf_io;
+
+import '../http/http.dart';
 import 'core.dart';
-import 'winter_io.dart' as WinterIo;
 
 ///Dependency Injection: easy access to the current dependency injection instance
 WinterDI get di => WinterServer.instance.context.dependencyInjection;
@@ -54,44 +56,6 @@ class WinterServer {
   /// - Its delay is counted in the `start time` of the server
   /// - Waits for it to complete to mark the server as started
   /// - In this method the `WinterServer.instance` will already by initialized
-  ///
-  /// Example:
-  /// void main() async {
-  ///   await WinterServer(
-  ///     config: ServerConfig(port: 9090),
-  ///     router: WinterRouter(
-  ///       config: RouterConfig(
-  ///         onInvalidUrl: OnInvalidUrl.fail(),
-  ///       ),
-  ///       routes: [
-  ///         WinterRoute(
-  ///           path: '/',
-  ///           method: HttpMethod.GET,
-  ///           handler: _rootHandler,
-  ///         ),
-  ///       ],
-  ///     ),
-  ///   ).start(
-  ///     beforeStart: () async {
-  ///       ///print(WinterServer.instance);///Throws state error
-  ///
-  ///       ///config some DI or whatever
-  ///       WinterDI.instance.put(
-  ///         'Hello world (from DI)',
-  ///         tag: 'hello-world',
-  ///       );
-  ///     },
-  ///     afterStart: () async {
-  ///       print(
-  ///         WinterServer.instance.di.find<String>(tag: 'hello-world'),
-  ///       ); ///current instance
-  ///     },
-  ///   );
-  /// }
-  ///
-  /// ResponseEntity _rootHandler(RequestEntity req) {
-  ///   return ResponseEntity.ok(body: 'Hello, World!\n');
-  /// }
   Future<WinterServer> start({
     Future Function()? beforeStart,
     Future Function()? afterStart,
@@ -106,17 +70,23 @@ class WinterServer {
       await beforeStart();
     }
 
-    runningServer = await WinterIo.serve(
-      (request) => router.call(request),
-      exceptionHandler: (request, error, stackTrac) =>
-          context.exceptionHandler.call(
-        request,
-        error,
-        stackTrac,
+    runningServer = await shelf_io.serve(
+      poweredByHeader: 'Winter-Server',
+      (request) => router.call(
+        RequestEntity(
+          request.method,
+          request.requestedUri,
+          body: request.read(),
+          context: request.context,
+          encoding: request.encoding,
+          handlerPath: request.handlerPath,
+          headers: request.headers,
+          protocolVersion: request.protocolVersion,
+          url: request.url,
+        ),
       ),
       config.ip,
       config.port,
-      allowBodyOnGetMethod: true,
     );
 
     _winterServer = this;

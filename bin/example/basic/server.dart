@@ -9,14 +9,14 @@ void main() => WinterServer(
         routes: [
           WinterRoute(
             path: '/test',
-            method: HttpMethod.GET,
+            method: HttpMethod.get,
             handler: (request) => ResponseEntity.ok(
               body: 'hello-world',
             ),
           ),
           WinterRoute(
             path: '/object',
-            method: HttpMethod.POST,
+            method: HttpMethod.post,
             handler: (request) async {
               HiWorldRequest? body = await request.body<HiWorldRequest>();
 

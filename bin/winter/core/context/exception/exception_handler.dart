@@ -6,7 +6,7 @@ abstract class ExceptionHandler {
   Future<ResponseEntity> call(
     RequestEntity request,
     Exception error,
-    StackTrace stackTrac,
+    StackTrace stackTrace,
   );
 }
 
@@ -19,15 +19,13 @@ class SimpleExceptionHandler extends ExceptionHandler {
   ) async {
     if (exception is ValidationException) {
       return ResponseEntity(
-        headers: HttpHeaders({}),
+        exception.statusCode,
         body: om.serialize(exception.violations),
-        status: HttpStatus.valueOf(exception.statusCode),
       );
     } else if (exception is ApiException) {
       return ResponseEntity(
-        headers: HttpHeaders({}),
+        exception.statusCode,
         body: exception.message,
-        status: HttpStatus.valueOf(exception.statusCode),
       );
     }
     return ResponseEntity.internalServerError(body: exception.toString());

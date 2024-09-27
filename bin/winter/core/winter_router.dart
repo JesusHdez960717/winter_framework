@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 
 import '../http/http.dart';
 import 'router/router.dart';
+import 'winter_server.dart';
 
 abstract class WinterRouter {
   Future<ResponseEntity> call(RequestEntity request);
@@ -50,14 +51,22 @@ class SimpleWinterRouter extends WinterRouter {
     } else {
       //hay alguna, reviso method
       WinterRoute? finalRoute = matchedRoutes.firstWhereOrNull(
-        (element) => element.method == request.method,
+        (element) => element.method == HttpMethod(request.method),
       );
       if (finalRoute == null) {
         //ninguna coincide con ese method
         return ResponseEntity.methodNotAllowed();
       } else {
         request.setUpPathParams(finalRoute.path);
-        return await finalRoute.invoke(request);
+        try {
+          return await finalRoute.handler(request);
+        } on Exception catch (error, stackTrace) {
+          return WinterServer.instance.context.exceptionHandler.call(
+            request,
+            error,
+            stackTrace,
+          );
+        }
       }
     }
   }

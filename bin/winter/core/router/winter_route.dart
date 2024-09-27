@@ -53,8 +53,4 @@ class WinterRoute<In, Out> {
 
     return matchUrlPath != null;
   }
-
-  Future<ResponseEntity> invoke(RequestEntity request) async {
-    return await handler(request);
-  }
 }

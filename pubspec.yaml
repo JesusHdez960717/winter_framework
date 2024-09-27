@@ -9,7 +9,6 @@ environment:
 dependencies:
   args: ^2.4.0
   shelf: ^1.4.0
-  shelf_router: ^1.1.0
 
   #para el parseo a snack case
   change_case: ^2.1.0
