@@ -1,4 +1,4 @@
-import '../core.dart';
+import '../winter.dart';
 
 class RouterConfig {
   RouterConfig({

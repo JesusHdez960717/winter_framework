@@ -1,6 +1,5 @@
 import 'package:test/test.dart';
 
-import '../../bin/winter/core/context/exception/exceptions.dart';
 import '../../bin/winter/winter.dart';
 import 'models.dart';
 

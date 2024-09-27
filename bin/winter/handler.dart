@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import '../http/request_entity.dart';
-import '../http/response_entity.dart';
+import 'request_entity.dart';
+import 'response_entity.dart';
 
 /// A function which handles a [RequestEntity].
 ///

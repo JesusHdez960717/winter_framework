@@ -6,5 +6,3 @@ export 'http_method.dart';
 export 'http_status.dart';
 export 'http_status_code.dart';
 export 'media_type.dart';
-export 'request_entity.dart';
-export 'response_entity.dart';

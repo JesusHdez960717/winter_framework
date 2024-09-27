@@ -2,8 +2,7 @@ import 'dart:mirrors';
 
 import 'package:collection/collection.dart'; // needed firstWhereOrNull. You have to add this manually, for some reason it cannot be added automatically
 
-import '../../core.dart';
-import '../exception/exceptions.dart';
+import '../../winter.dart';
 
 typedef ValidationFunction = bool Function(
   dynamic object,

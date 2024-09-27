@@ -3,8 +3,7 @@ import 'dart:io';
 
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
-import '../http/http.dart';
-import 'core.dart';
+import 'winter.dart';
 
 ///Dependency Injection: easy access to the current dependency injection instance
 WinterDI get di => WinterServer.instance.context.dependencyInjection;
@@ -14,6 +13,9 @@ ObjectMapper get om => WinterServer.instance.context.objectMapper;
 
 ///Validation Service: easy access to the current validation service instance
 ValidationService get vs => WinterServer.instance.context.validationService;
+
+///Exception Handler: easy access to the current exception handler instance
+ExceptionHandler get eh => WinterServer.instance.context.exceptionHandler;
 
 class WinterServer {
   static WinterServer get instance {

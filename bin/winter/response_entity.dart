@@ -1,6 +1,6 @@
 import 'package:shelf/shelf.dart';
 
-import '../winter.dart';
+import 'winter.dart';
 
 class ResponseEntity extends Response {
   ResponseEntity(

@@ -1,5 +1,4 @@
-import '../../http/http.dart';
-import '../core.dart';
+import '../winter.dart';
 
 class WinterRoute<In, Out> {
   final String path;

@@ -1,4 +1,4 @@
-import '../../core.dart';
+import '../../winter.dart';
 
 /// Class that represent a fail validation
 /// (Details and examples in docs)

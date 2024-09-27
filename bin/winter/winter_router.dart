@@ -2,9 +2,7 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 
-import '../http/http.dart';
-import 'router/router.dart';
-import 'winter_server.dart';
+import 'winter.dart';
 
 abstract class WinterRouter {
   Future<ResponseEntity> call(RequestEntity request);

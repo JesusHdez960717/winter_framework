@@ -1,7 +1,6 @@
 import 'package:shelf/shelf.dart';
 
-import '../core/core.dart';
-import 'http_method.dart';
+import 'winter.dart';
 
 class RequestEntity extends Request {
   late final Map<String, String> pathParams;
