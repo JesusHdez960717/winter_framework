@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:shelf/shelf_io.dart' as shelf_io;
+import 'package:shelf/src/request.dart';
+import 'package:shelf/src/response.dart';
 
 import 'winter.dart';
 
@@ -74,19 +76,7 @@ class WinterServer {
 
     runningServer = await shelf_io.serve(
       poweredByHeader: 'Winter-Server',
-      (request) => router.call(
-        RequestEntity(
-          request.method,
-          request.requestedUri,
-          body: request.read(),
-          context: request.context,
-          encoding: request.encoding,
-          handlerPath: request.handlerPath,
-          headers: request.headers,
-          protocolVersion: request.protocolVersion,
-          url: request.url,
-        ),
-      ),
+      _handleRequest,
       config.ip,
       config.port,
     );
@@ -109,6 +99,29 @@ class WinterServer {
   Future close({bool force = false}) async {
     _isRunning = false;
     _winterServer = null;
-    return runningServer.close(force: force);
+    await runningServer.close(force: force);
+  }
+
+  FutureOr<Response> _handleRequest(Request request) async {
+    RequestEntity entity = RequestEntity(
+      request.method,
+      request.requestedUri,
+      body: request.read(),
+      context: request.context,
+      encoding: request.encoding,
+      handlerPath: request.handlerPath,
+      headers: request.headers,
+      protocolVersion: request.protocolVersion,
+      url: request.url,
+    );
+    try {
+      return await router.call(entity);
+    } on Exception catch (error, stackTrace) {
+      return WinterServer.instance.context.exceptionHandler.call(
+        entity,
+        error,
+        stackTrace,
+      );
+    }
   }
 }

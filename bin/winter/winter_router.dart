@@ -22,9 +22,8 @@ class SimpleWinterRouter extends WinterRouter {
     RouterConfig? config,
   })  : _rawRoutes = routes,
         config = config ?? RouterConfig() {
-    this.config.onLoadedRoutes.afterInit(
-          expandedRoutes, //llama al getter para que haga el flatten cuando se inicializa
-        );
+    ///call getter to make flatten on init
+    this.config.onLoadedRoutes.afterInit(expandedRoutes);
   }
 
   List<WinterRoute> get expandedRoutes {
@@ -35,7 +34,7 @@ class SimpleWinterRouter extends WinterRouter {
 
   @override
   Future<ResponseEntity> call(RequestEntity request) async {
-    //busco las rutas que coincidan con el path
+    ///find routes that match with the path
     String urlPath = '/${request.url.path}';
     List<WinterRoute> matchedRoutes = expandedRoutes
         .where(
@@ -43,28 +42,21 @@ class SimpleWinterRouter extends WinterRouter {
         )
         .toList();
 
-    //no hay ninguna: 404
+    ///no routes found: 404
     if (matchedRoutes.isEmpty) {
       return ResponseEntity.notFound();
     } else {
-      //hay alguna, reviso method
+      ///there is some route, check method (get, post, put...)
       WinterRoute? finalRoute = matchedRoutes.firstWhereOrNull(
         (element) => element.method == HttpMethod(request.method),
       );
       if (finalRoute == null) {
-        //ninguna coincide con ese method
+        ///no route matching method: 415
         return ResponseEntity.methodNotAllowed();
       } else {
+        ///founded route: set up query & path params & run handler
         request.setUpPathParams(finalRoute.path);
-        try {
-          return await finalRoute.handler(request);
-        } on Exception catch (error, stackTrace) {
-          return WinterServer.instance.context.exceptionHandler.call(
-            request,
-            error,
-            stackTrace,
-          );
-        }
+        return await finalRoute.handler(request);
       }
     }
   }
