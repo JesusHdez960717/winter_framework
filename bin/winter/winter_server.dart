@@ -19,6 +19,10 @@ ValidationService get vs => WinterServer.instance.context.validationService;
 ///Exception Handler: easy access to the current exception handler instance
 ExceptionHandler get eh => WinterServer.instance.context.exceptionHandler;
 
+typedef WinterHandler = FutureOr<ResponseEntity> Function(
+  RequestEntity request,
+);
+
 class WinterServer {
   static WinterServer get instance {
     if (_winterServer == null) {
@@ -33,6 +37,7 @@ class WinterServer {
   final BuildContext context;
   final ServerConfig config;
   final WinterRouter router;
+  final FilterConfig filterConfig;
 
   late final HttpServer runningServer;
 
@@ -45,9 +50,11 @@ class WinterServer {
     WinterRouter? router,
     ExceptionHandler? exceptionHandler,
     WinterDI? di,
+    FilterConfig? filterConfig,
   })  : context = context ?? BuildContext(),
         config = config ?? ServerConfig(),
-        router = router ?? SimpleWinterRouter();
+        router = router ?? SimpleWinterRouter(),
+        filterConfig = filterConfig ?? FilterConfig([]);
 
   ///Start the web server with all the current config in this object
   ///beforeStart:
@@ -103,7 +110,7 @@ class WinterServer {
   }
 
   FutureOr<Response> _handleRequest(Request request) async {
-    RequestEntity entity = RequestEntity(
+    RequestEntity requestEntity = RequestEntity(
       request.method,
       request.requestedUri,
       body: request.read(),
@@ -114,11 +121,19 @@ class WinterServer {
       protocolVersion: request.protocolVersion,
       url: request.url,
     );
+
     try {
-      return await router.call(entity);
+      WinterHandler baseCall = router.call(requestEntity);
+
+      FilterChain filterChain = FilterChain(
+        filterConfig.filters,
+        baseCall,
+      );
+
+      return await filterChain.doFilter(requestEntity);
     } on Exception catch (error, stackTrace) {
       return WinterServer.instance.context.exceptionHandler.call(
-        entity,
+        requestEntity,
         error,
         stackTrace,
       );
