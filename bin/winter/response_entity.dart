@@ -3,6 +3,8 @@ import 'package:shelf/shelf.dart';
 import 'winter.dart';
 
 class ResponseEntity extends Response {
+  Object? _body;
+
   ResponseEntity(
     super.statusCode, {
     Object? body,
@@ -10,12 +12,19 @@ class ResponseEntity extends Response {
     super.headers,
     super.encoding,
     super.context,
-  }) : super(
+  })  : _body = body,
+        super(
           body: body is! Stream
-              ? (objectMapper ?? WinterServer.instance.context.objectMapper)
-                  .serialize(body)
+              ? body != null
+                  ? (objectMapper ?? WinterServer.instance.context.objectMapper)
+                      .serialize(body)
+                  : ''
               : body,
         );
+
+  T body<T>() {
+    return _body as T;
+  }
 
   ResponseEntity.ok({
     Object? body,
@@ -50,5 +59,17 @@ class ResponseEntity extends Response {
   }) : this(
           HttpStatus.METHOD_NOT_ALLOWED.value,
           body: body ?? 'Method not allowed',
+        );
+
+  ResponseEntity.tooManyRequests({
+    Object? body,
+    int? retryAfter,
+  }) : this(
+          HttpStatus.TOO_MANY_REQUESTS.value,
+          body: body ??
+              'Too many requests.${retryAfter != null ? ' Please try again in $retryAfter seconds.' : ''}',
+          headers: {
+            if (retryAfter != null) HttpHeaders.RETRY_AFTER: '$retryAfter',
+          },
         );
 }
