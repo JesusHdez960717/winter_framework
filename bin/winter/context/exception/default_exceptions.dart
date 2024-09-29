@@ -1,5 +1,13 @@
 import '../../winter.dart';
 
+///Special exception to break up any current flow and return this instead
+class ResponseException implements Exception {
+  ResponseEntity responseEntity;
+
+  ResponseException(this.responseEntity);
+}
+
+///Base exception
 class ApiException implements Exception {
   final int statusCode;
   final String message;
@@ -102,4 +110,9 @@ class ValidationException extends UnprocessableEntityException {
   final List<ConstrainViolation> violations;
 
   ValidationException({required this.violations});
+
+  @override
+  String toString() {
+    return 'ValidationException{violations: $violations}';
+  }
 }

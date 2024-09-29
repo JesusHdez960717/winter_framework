@@ -3,7 +3,7 @@ library context;
 export 'dependency_injection/winter_di.dart';
 
 export 'exception/exception_handler.dart';
-export 'exception/exceptions.dart';
+export 'exception/default_exceptions.dart';
 
 export 'object_mapper/object_mapper.dart';
 export 'object_mapper/object_mapper_impl.dart';
