@@ -1,11 +1,9 @@
-import 'dart:async';
-
 import 'package:collection/collection.dart';
 
 import 'winter.dart';
 
 abstract class WinterRouter {
-  Future<ResponseEntity> call(RequestEntity request);
+  WinterHandler call(RequestEntity request);
 }
 
 class SimpleWinterRouter extends WinterRouter {
@@ -33,7 +31,7 @@ class SimpleWinterRouter extends WinterRouter {
   }
 
   @override
-  Future<ResponseEntity> call(RequestEntity request) async {
+  WinterHandler call(RequestEntity request) {
     ///find routes that match with the path
     String urlPath = '/${request.url.path}';
     List<WinterRoute> matchedRoutes = expandedRoutes
@@ -44,7 +42,7 @@ class SimpleWinterRouter extends WinterRouter {
 
     ///no routes found: 404
     if (matchedRoutes.isEmpty) {
-      return ResponseEntity.notFound();
+      return (_) => ResponseEntity.notFound();
     } else {
       ///there is some route, check method (get, post, put...)
       WinterRoute? finalRoute = matchedRoutes.firstWhereOrNull(
@@ -52,11 +50,11 @@ class SimpleWinterRouter extends WinterRouter {
       );
       if (finalRoute == null) {
         ///no route matching method: 415
-        return ResponseEntity.methodNotAllowed();
+        return (_) => ResponseEntity.methodNotAllowed();
       } else {
-        ///founded route: set up query & path params & run handler
+        ///founded route: set up path params & return handler for this request
         request.setUpPathParams(finalRoute.path);
-        return await finalRoute.handler(request);
+        return (newRequest) => finalRoute.handler(newRequest);
       }
     }
   }
