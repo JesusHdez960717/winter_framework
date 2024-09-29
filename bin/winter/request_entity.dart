@@ -81,5 +81,5 @@ Map<String, String> _extractPathParams(String templateUrl, String actualUrl) {
 
 Map<String, String> _extractQueryParams(String actualUrl) {
   Uri uri = Uri.parse(actualUrl);
-  return uri.queryParameters;
+  return Map.of(uri.queryParameters);
 }
