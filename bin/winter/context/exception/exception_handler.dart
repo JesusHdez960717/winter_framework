@@ -15,7 +15,9 @@ class SimpleExceptionHandler extends ExceptionHandler {
     Exception exception,
     StackTrace stackTrac,
   ) async {
-    if (exception is ValidationException) {
+    if (exception is ResponseException) {
+      return exception.responseEntity;
+    } else if (exception is ValidationException) {
       return ResponseEntity(
         exception.statusCode,
         body: om.serialize(exception.violations),
@@ -26,6 +28,8 @@ class SimpleExceptionHandler extends ExceptionHandler {
         body: exception.message,
       );
     }
+    print(exception);
+    print(stackTrac);
     return ResponseEntity.internalServerError(body: exception.toString());
   }
 }
