@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 import '../../../../bin/winter/winter.dart';
 
 void main() {
-  int port = 9052;
+  int port = 9051;
   String localUrl = 'http://localhost:$port';
 
   setUpAll(
@@ -17,7 +17,7 @@ void main() {
         router: HRouter(
           routes: [
             ParentRoute(
-              path: '/parent',
+              path: '/parent.*',
               routes: [
                 HRoute(
                   path: '/child-1',
@@ -36,7 +36,7 @@ void main() {
               ],
             ),
             HRoute(
-              path: '/single-route',
+              path: '/single-route.*',
               method: HttpMethod.get,
               handler: (request) => ResponseEntity.ok(
                 body: 'Return from response /single-route',
@@ -50,7 +50,7 @@ void main() {
               ),
               routes: [
                 HRoute(
-                  path: '/child',
+                  path: '/child.*',
                   method: HttpMethod.get,
                   handler: (request) => ResponseEntity.ok(
                     body: 'Return from response /route-parent/child',
@@ -68,24 +68,32 @@ void main() {
 
   Uri url(String path) => Uri.parse(localUrl + path);
 
-  test('Test /parent/child-1', () async {
-    String urlToTest = '/parent/child-1';
+  test('Test /parent.*/child-1', () async {
+    String urlToTest = '/parent_hello_world/child-1';
     http.Response response = await http.get(url(urlToTest));
 
     expect(response.statusCode, 200);
     expect(response.body, 'Return from response /parent/child-1');
   });
 
-  test('Test /parent/child-2', () async {
-    String urlToTest = '/parent/child-2';
+  test('Test /parent.*/child-2', () async {
+    String urlToTest = '/parent_hi/child-2';
     http.Response response = await http.get(url(urlToTest));
 
     expect(response.statusCode, 200);
     expect(response.body, 'Return from response /parent/child-2');
   });
 
-  test('Test /single-route', () async {
-    String urlToTest = '/single-route';
+  test('Test /single-route.* #1', () async {
+    String urlToTest = '/single-route-alleluia';
+    http.Response response = await http.get(url(urlToTest));
+
+    expect(response.statusCode, 200);
+    expect(response.body, 'Return from response /single-route');
+  });
+
+  test('Test /single-route.* #2', () async {
+    String urlToTest = '/single-route/bye';
     http.Response response = await http.get(url(urlToTest));
 
     expect(response.statusCode, 200);
@@ -101,7 +109,7 @@ void main() {
   });
 
   test('Test /route-parent/child', () async {
-    String urlToTest = '/route-parent/child';
+    String urlToTest = '/route-parent/child_123546789';
     http.Response response = await http.get(url(urlToTest));
 
     expect(response.statusCode, 200);
