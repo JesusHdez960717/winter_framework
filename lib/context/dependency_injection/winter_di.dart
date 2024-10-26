@@ -1,5 +1,3 @@
-import 'dart:mirrors';
-
 abstract class DependencyInjection {
   static DependencyInjection build() => _DependencyInjectionImpl();
 
@@ -22,9 +20,7 @@ class _DependencyInjectionImpl extends DependencyInjection {
 
   @override
   void put(dynamic dependency, {String? tag}) {
-    Type type = reflect(dependency).type.reflectedType;
-
-    final key = _getKey(type, tag);
+    final key = _getKey(String, tag);
 
     _singl[key] = dependency;
   }
